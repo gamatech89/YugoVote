@@ -58,6 +58,11 @@ if (file_exists($quizzes_inc_path . 'api/quiz-gate-endpoints.php')) {
     error_log('YGV Quizzes: api/quiz-gate-endpoints.php not found');
 }
 
+// --- Admin (columns, filters) ---
+if (file_exists($quizzes_inc_path . 'admin/question-columns.php')) {
+    require_once $quizzes_inc_path . 'admin/question-columns.php';
+}
+
 // --- Helpers ---
 if (file_exists($quizzes_inc_path . 'helpers/helper-functions.php')) {
     require_once $quizzes_inc_path . 'helpers/helper-functions.php';

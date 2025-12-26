@@ -21,8 +21,8 @@ require_once $voting_inc_path . 'cpts/cpt-voting-list.php';
 require_once $voting_inc_path . 'cpts/cpt-voting-list-items.php';
 
 // Load Taxonomies
-require_once $voting_inc_path . 'taxonomies/taxonomy-voting-list-category.php';
-require_once $voting_inc_path . 'taxonomies/taxonomy-voting-item-category.php';
+require_once $voting_inc_path . 'cpts/taxonomy-voting-list-category.php';
+require_once $voting_inc_path . 'cpts/taxonomy-voting-item-category.php';
 
 // Load Meta Boxes
 require_once $voting_inc_path . 'meta/user-level-meta.php';
@@ -38,6 +38,11 @@ require_once $voting_inc_path . 'voting-hooks.php';
 
 // Load API Endpoints
 require_once $voting_inc_path . 'api/voting-endpoints.php';
+
+// Load Admin (columns, filters, quick edit)
+if (file_exists($voting_inc_path . 'admin/voting-columns.php')) {
+    require_once $voting_inc_path . 'admin/voting-columns.php';
+}
 
 // Load Helper Functions & Scripts specific to Voting
 // (Your main init.php listed db-schema.php and voting-scripts.php here.
