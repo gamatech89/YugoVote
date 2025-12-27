@@ -99,6 +99,20 @@
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.yuv-progress-badge {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #fe6555 0%, #ff7b6b 100%);
+  padding: 4px 12px;
+  border-radius: 12px;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .yuv-countdown-timer {

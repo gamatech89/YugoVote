@@ -429,11 +429,42 @@ function yuv_active_duel_shortcode($atts) {
 
     // Stage labels
     $stage_labels = [
+        'of' => 'Osmina finala',
         'qf' => 'Četvrtfinale',
         'sf' => 'Polufinale',
         'final' => 'FINALE'
     ];
     $stage_label = $stage_labels[$stage] ?? 'Meč';
+    
+    // Get all matches in current stage to show progress
+    $total_stage_matches = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*)
+        FROM {$wpdb->posts} p
+        INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_stage'
+        INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_tournament_id'
+        WHERE p.post_type = 'voting_list'
+        AND pm1.meta_value = %s
+        AND pm2.meta_value = %d",
+        $stage,
+        $tournament_id
+    ));
+    
+    // Count how many matches user voted in this stage
+    $user_votes_in_stage = 0;
+    if ($user_id > 0) {
+        $user_votes_in_stage = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT v.voting_list_id)
+            FROM {$wpdb->prefix}voting_list_votes v
+            INNER JOIN {$wpdb->postmeta} pm1 ON v.voting_list_id = pm1.post_id AND pm1.meta_key = '_yuv_stage'
+            INNER JOIN {$wpdb->postmeta} pm2 ON v.voting_list_id = pm2.post_id AND pm2.meta_key = '_yuv_tournament_id'
+            WHERE v.user_id = %d
+            AND pm1.meta_value = %s
+            AND pm2.meta_value = %d",
+            $user_id,
+            $stage,
+            $tournament_id
+        ));
+    }
 
     // Get tournament title
     $tournament_title = get_the_title($tournament_id);
@@ -451,7 +482,10 @@ function yuv_active_duel_shortcode($atts) {
         <div class="yuv-arena-header">
             <div class="yuv-match-info">
                 <span class="yuv-tournament-badge">🏆 <?php echo esc_html($tournament_title); ?></span>
-                <h4 class="yuv-match-title"><?php echo esc_html($stage_label . ' ' . $match_number); ?></h4>
+                <h4 class="yuv-match-title">
+                    <?php echo esc_html($stage_label . ' ' . $match_number); ?>
+                    <span class="yuv-progress-badge"><?php echo $user_votes_in_stage; ?>/<?php echo $total_stage_matches; ?> glasova</span>
+                </h4>
             </div>
             <div class="yuv-countdown-timer">
                 <span class="yuv-timer-label">⏱️ Preostalo vreme:</span>

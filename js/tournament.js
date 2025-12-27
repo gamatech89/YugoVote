@@ -80,10 +80,14 @@ jQuery(document).ready(function ($) {
           // Show success toast
           showToast("Tvoj glas je zabeležen!");
 
-          // Reload page after 2 seconds to show results
+          // If there's a next match, redirect to it, otherwise reload
           setTimeout(function () {
-            location.reload();
-          }, 2000);
+            if (response.data.next_match_url) {
+              window.location.href = response.data.next_match_url;
+            } else {
+              location.reload();
+            }
+          }, 1500);
         } else {
           alert(
             response.data.message || "Greška pri glasanju. Pokušaj ponovo."
