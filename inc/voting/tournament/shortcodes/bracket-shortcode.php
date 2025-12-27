@@ -549,21 +549,22 @@ function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $al
                     $img2 = get_post_meta($strip_items[1], '_custom_image_url', true) ?: get_the_post_thumbnail_url($strip_items[1], 'thumbnail');
                 }
                 
-                // FIX 3: Build URL with match_id param AND #yuv-arena anchor
-                $match_url = add_query_arg('match_id', $strip_match_id, get_permalink()) . '#yuv-arena';
+                // Use data attribute for match_id (AJAX navigation, no URL changes)
             ?>
-                <a href="<?php echo esc_url($match_url); ?>" class="yuv-nav-item <?php echo esc_attr($strip_class); ?>">
-                    <?php if ($img1): ?>
-                        <img src="<?php echo esc_url($img1); ?>" alt="" class="yuv-nav-img left">
-                    <?php endif; ?>
-                    <span class="yuv-nav-vs">vs</span>
-                    <?php if ($img2): ?>
-                        <img src="<?php echo esc_url($img2); ?>" alt="" class="yuv-nav-img right">
-                    <?php endif; ?>
+                <div class="yuv-nav-item <?php echo esc_attr($strip_class); ?>" data-match-id="<?php echo esc_attr($strip_match_id); ?>">
+                    <div class="yuv-nav-thumbs">
+                        <?php if ($img1): ?>
+                            <img src="<?php echo esc_url($img1); ?>" alt="" class="yuv-nav-img">
+                        <?php endif; ?>
+                        <span class="yuv-nav-vs">VS</span>
+                        <?php if ($img2): ?>
+                            <img src="<?php echo esc_url($img2); ?>" alt="" class="yuv-nav-img">
+                        <?php endif; ?>
+                    </div>
                     <?php if ($strip_voted): ?>
-                        <span class="yuv-nav-check">✓</span>
+                        <span class="yuv-nav-check"></span>
                     <?php endif; ?>
-                </a>
+                </div>
             <?php endforeach; ?>
         </div>
 

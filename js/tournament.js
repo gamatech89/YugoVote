@@ -247,26 +247,26 @@ jQuery(document).ready(function ($) {
     
     $(document).on("click", ".yuv-nav-item", function (e) {
       e.preventDefault();
+      e.stopPropagation();
 
-      const $link = $(this);
-      const href = $link.attr("href");
+      const $item = $(this);
       
-      if (!href) return;
+      // Get match ID from data attribute (not href!)
+      const matchId = $item.data("match-id");
 
-      // Extract match_id from URL
-      const url = new URL(href, window.location.origin);
-      const matchId = url.searchParams.get("match_id");
-
-      if (matchId) {
-        // Clean up timer if exists
-        const timerId = $arenaContainer.data('timer-interval');
-        if (timerId) {
-          clearInterval(timerId);
-        }
-        
-        // Load specific match via AJAX
-        loadNextMatch(parseInt(matchId));
+      if (!matchId) {
+        console.error("No match ID found on nav item");
+        return;
       }
+
+      // Clean up timer if exists
+      const timerId = $arenaContainer.data('timer-interval');
+      if (timerId) {
+        clearInterval(timerId);
+      }
+      
+      // Load specific match via AJAX (pure carousel behavior)
+      loadNextMatch(parseInt(matchId));
     });
   }
 

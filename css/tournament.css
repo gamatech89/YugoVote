@@ -901,7 +901,8 @@
   border: 3px solid rgba(255, 255, 255, 0.2);
   border-radius: 60px;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(254, 101, 85, 0.4), 0 0 40px rgba(254, 101, 85, 0.1);
+  box-shadow: 0 8px 24px rgba(254, 101, 85, 0.4),
+    0 0 40px rgba(254, 101, 85, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: auto;
   position: relative !important;
@@ -914,7 +915,8 @@
 
 .yuv-vote-btn:hover {
   transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 12px 36px rgba(254, 101, 85, 0.6), 0 0 60px rgba(254, 101, 85, 0.2);
+  box-shadow: 0 12px 36px rgba(254, 101, 85, 0.6),
+    0 0 60px rgba(254, 101, 85, 0.2);
   background: linear-gradient(135deg, #ff5745 0%, #fe6555 100%);
   border-color: rgba(255, 255, 255, 0.4);
 }
@@ -964,7 +966,11 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  background: linear-gradient(180deg, rgba(30, 41, 59, 0.97) 0%, rgba(15, 23, 42, 0.97) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(30, 41, 59, 0.97) 0%,
+    rgba(15, 23, 42, 0.97) 100%
+  );
   backdrop-filter: blur(12px);
   border-top: 2px solid rgba(254, 101, 85, 0.3);
 }
@@ -976,14 +982,16 @@
   height: 6px;
   background: linear-gradient(90deg, #4355a4 0%, #fe6555 50%, #ffd700 100%);
   transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 0 20px rgba(254, 101, 85, 0.6), 0 -2px 8px rgba(254, 101, 85, 0.4);
+  box-shadow: 0 0 20px rgba(254, 101, 85, 0.6),
+    0 -2px 8px rgba(254, 101, 85, 0.4);
 }
 
 .yuv-percent {
   font-size: 64px;
   font-weight: 900;
   color: #ffd700;
-  text-shadow: 0 4px 16px rgba(255, 215, 0, 0.5), 0 0 40px rgba(254, 101, 85, 0.3);
+  text-shadow: 0 4px 16px rgba(255, 215, 0, 0.5),
+    0 0 40px rgba(254, 101, 85, 0.3);
   margin: 0;
   line-height: 1;
   animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1027,8 +1035,14 @@
   text-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 4px 16px rgba(0, 0, 0, 0.7);
 }
 
+/* DON'T change name color unless it's actually the winner and results are showing */
+.yuv-contender-name {
+  transition: color 0.5s ease, text-shadow 0.5s ease;
+}
+
 @keyframes winnerGlow {
-  0%, 100% {
+  0%,
+  100% {
     filter: brightness(1);
   }
   50% {
@@ -1068,90 +1082,201 @@
   transform: none !important;
 }
 
-/* Navigation Strip (Horizontal Scroll) */
+/* Navigation Strip (Horizontal Scroll) - REDESIGNED */
 .yuv-nav-strip {
   display: flex;
-  gap: 12px;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.4);
+  gap: 16px;
+  padding: 24px;
+  background: linear-gradient(
+    180deg,
+    rgba(30, 41, 59, 0.95) 0%,
+    rgba(15, 23, 42, 0.95) 100%
+  );
+  border-top: 2px solid rgba(67, 85, 164, 0.3);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
-  scrollbar-color: #4355a4 rgba(255, 255, 255, 0.1);
+  scrollbar-color: #4355a4 rgba(67, 85, 164, 0.2);
 }
 
 .yuv-nav-strip::-webkit-scrollbar {
-  height: 6px;
+  height: 8px;
 }
 
 .yuv-nav-strip::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(67, 85, 164, 0.1);
+  border-radius: 4px;
 }
 
 .yuv-nav-strip::-webkit-scrollbar-thumb {
-  background: #4355a4;
-  border-radius: 3px;
+  background: linear-gradient(90deg, #4355a4 0%, #5568c4 100%);
+  border-radius: 4px;
+  transition: background 0.3s;
 }
 
-/* Nav Item */
+.yuv-nav-strip::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #5568c4 0%, #4355a4 100%);
+}
+
+/* Nav Item - Card Design with Proper Spacing */
 .yuv-nav-item {
   position: relative;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 100px;
-  height: 60px;
-  background: rgba(67, 85, 164, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  width: 140px;
+  height: auto;
+  background: linear-gradient(
+    135deg,
+    rgba(67, 85, 164, 0.15) 0%,
+    rgba(67, 85, 164, 0.08) 100%
+  );
+  border: 2px solid rgba(67, 85, 164, 0.3);
+  border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
 }
 
 .yuv-nav-item:hover {
-  transform: translateY(-4px);
-  border-color: #4355a4;
-  box-shadow: 0 6px 16px rgba(67, 85, 164, 0.4);
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(67, 85, 164, 0.6);
+  box-shadow: 0 8px 24px rgba(67, 85, 164, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(67, 85, 164, 0.25) 0%,
+    rgba(67, 85, 164, 0.15) 100%
+  );
+}
+
+/* Thumbnail Container */
+.yuv-nav-thumbs {
+  display: flex;
+  gap: 4px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  justify-content: center;
+  align-items: center;
 }
 
 .yuv-nav-img {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   object-fit: cover;
-  border-radius: 6px;
-  opacity: 0.8;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.yuv-nav-item:hover .yuv-nav-img {
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
 }
 
 .yuv-nav-vs {
-  font-size: 10px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
 }
 
-/* Current Match */
+/* Current Match - BLUE Glow (Active/Viewing) */
 .yuv-nav-item.current {
-  border-color: #fe6555;
+  border-color: #4355a4;
   border-width: 3px;
-  box-shadow: 0 0 16px rgba(254, 101, 85, 0.6);
+  background: linear-gradient(
+    135deg,
+    rgba(67, 85, 164, 0.35) 0%,
+    rgba(67, 85, 164, 0.25) 100%
+  );
+  box-shadow: 0 0 24px rgba(67, 85, 164, 0.6), 0 4px 16px rgba(67, 85, 164, 0.4);
+  transform: scale(1.05);
 }
 
-/* Voted Match */
+.yuv-nav-item.current:hover {
+  transform: translateY(-4px) scale(1.06);
+}
+
+.yuv-nav-item.current .yuv-nav-img {
+  border-color: #4355a4;
+  box-shadow: 0 0 12px rgba(67, 85, 164, 0.5);
+}
+
+.yuv-nav-item.current::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  background: #4355a4;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(67, 85, 164, 0.8);
+  z-index: 5;
+  animation: currentPulse 2s ease-in-out infinite;
+}
+
+@keyframes currentPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* Voted Match - GREEN Success State */
 .yuv-nav-item.voted {
-  background: rgba(67, 164, 99, 0.2);
-  border-color: #43a463;
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.2) 0%,
+    rgba(5, 150, 105, 0.15) 100%
+  );
+  border-color: #10b981;
+  border-width: 2px;
+}
+
+.yuv-nav-item.voted:hover {
+  border-color: #059669;
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.3) 0%,
+    rgba(5, 150, 105, 0.2) 100%
+  );
+}
+
+.yuv-nav-item.voted .yuv-nav-img {
+  border-color: rgba(16, 185, 129, 0.5);
+  opacity: 0.85;
 }
 
 .yuv-nav-check {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  font-size: 16px;
-  color: #43a463;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+  z-index: 5;
+}
+
+.yuv-nav-check::before {
+  content: "✓";
 }
 
 /* Animations */
@@ -1248,17 +1373,16 @@
 
   .yuv-nav-strip {
     padding: 16px;
-    gap: 8px;
+    gap: 12px;
   }
 
   .yuv-nav-item {
-    width: 80px;
-    height: 50px;
+    width: 120px;
   }
 
   .yuv-nav-img {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
   }
 
   .yuv-percent {
