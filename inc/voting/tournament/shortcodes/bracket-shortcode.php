@@ -244,6 +244,11 @@ function yuv_active_duel_shortcode($atts) {
     // Find currently active match
     $current_time = current_time('timestamp');
     
+    // Debug logging
+    error_log('=== Active Duel Debug ===');
+    error_log('Current timestamp: ' . $current_time);
+    error_log('Current datetime: ' . date('Y-m-d H:i:s', $current_time));
+    
     $active_match = $wpdb->get_var($wpdb->prepare(
         "SELECT p.ID 
         FROM {$wpdb->posts} p
@@ -257,6 +262,20 @@ function yuv_active_duel_shortcode($atts) {
         LIMIT 1",
         $current_time
     ));
+    
+    error_log('Active match ID: ' . ($active_match ?: 'NONE'));
+    error_log('Last SQL: ' . $wpdb->last_query);
+    
+    // Check all tournament matches for debugging
+    $all_matches = $wpdb->get_results(
+        "SELECT p.ID, p.post_title, pm1.meta_value as completed, pm2.meta_value as end_time
+        FROM {$wpdb->posts} p
+        LEFT JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_match_completed'
+        LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_end_time'
+        LEFT JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_is_tournament_match'
+        WHERE p.post_type = 'voting_list' AND pm3.meta_value = '1'"
+    );
+    error_log('All tournament matches: ' . print_r($all_matches, true));
 
     if (!$active_match) {
         return '<div class="yuv-no-duel">
