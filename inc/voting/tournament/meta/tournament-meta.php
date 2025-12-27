@@ -26,9 +26,7 @@ function yuv_tournament_metabox_callback($post) {
 
     // Get existing values
     $start_date = get_post_meta($post->ID, '_yuv_start_date', true);
-    $qf_duration = get_post_meta($post->ID, '_yuv_round_duration_qf', true) ?: 24;
-    $sf_duration = get_post_meta($post->ID, '_yuv_round_duration_sf', true) ?: 24;
-    $final_duration = get_post_meta($post->ID, '_yuv_round_duration_final', true) ?: 48;
+    $match_duration = get_post_meta($post->ID, '_yuv_match_duration', true) ?: 24;
     $contestants = get_post_meta($post->ID, '_yuv_contestants', true) ?: [];
     $bracket_created = get_post_meta($post->ID, '_yuv_bracket_created', true);
     $bracket_lists = get_post_meta($post->ID, '_yuv_bracket_lists', true) ?: [];
@@ -217,35 +215,16 @@ function yuv_tournament_metabox_callback($post) {
             <?php endif; ?>
         </div>
 
-        <!-- Round Durations -->
+        <!-- Match Duration -->
         <div class="yuv-meta-row">
-            <label for="yuv_round_duration_qf">⏱️ Trajanje četvrtfinala (sati):</label>
+            <label for="yuv_match_duration">⏱️ Trajanje svakog meča (sati):</label>
             <input type="number" 
-                   id="yuv_round_duration_qf" 
-                   name="yuv_round_duration_qf" 
-                   value="<?php echo esc_attr($qf_duration); ?>" 
+                   id="yuv_match_duration" 
+                   name="yuv_match_duration" 
+                   value="<?php echo esc_attr($match_duration); ?>" 
                    min="1"
                    <?php echo $bracket_created ? 'readonly' : ''; ?>>
-        </div>
-
-        <div class="yuv-meta-row">
-            <label for="yuv_round_duration_sf">⏱️ Trajanje polufinala (sati):</label>
-            <input type="number" 
-                   id="yuv_round_duration_sf" 
-                   name="yuv_round_duration_sf" 
-                   value="<?php echo esc_attr($sf_duration); ?>" 
-                   min="1"
-                   <?php echo $bracket_created ? 'readonly' : ''; ?>>
-        </div>
-
-        <div class="yuv-meta-row">
-            <label for="yuv_round_duration_final">⏱️ Trajanje finala (sati):</label>
-            <input type="number" 
-                   id="yuv_round_duration_final" 
-                   name="yuv_round_duration_final" 
-                   value="<?php echo esc_attr($final_duration); ?>" 
-                   min="1"
-                   <?php echo $bracket_created ? 'readonly' : ''; ?>>
+            <p class="description">Sve faze (QF/SF/Finale) traju isto. Dan 1: Sva 4 četvrtfinala, Dan 2: Oba polufinala, Dan 3: Finale</p>
         </div>
 
         <!-- Contestants -->
@@ -516,15 +495,9 @@ function yuv_save_tournament_meta($post_id) {
         update_post_meta($post_id, '_yuv_start_date', sanitize_text_field($_POST['yuv_start_date']));
     }
 
-    // Save round durations
-    if (isset($_POST['yuv_round_duration_qf'])) {
-        update_post_meta($post_id, '_yuv_round_duration_qf', intval($_POST['yuv_round_duration_qf']));
-    }
-    if (isset($_POST['yuv_round_duration_sf'])) {
-        update_post_meta($post_id, '_yuv_round_duration_sf', intval($_POST['yuv_round_duration_sf']));
-    }
-    if (isset($_POST['yuv_round_duration_final'])) {
-        update_post_meta($post_id, '_yuv_round_duration_final', intval($_POST['yuv_round_duration_final']));
+    // Save match duration
+    if (isset($_POST['yuv_match_duration'])) {
+        update_post_meta($post_id, '_yuv_match_duration', intval($_POST['yuv_match_duration']));
     }
 
     // Save contestants
