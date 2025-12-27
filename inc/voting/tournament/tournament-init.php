@@ -41,25 +41,25 @@ function yuv_enqueue_tournament_assets() {
         '1.0.1'
     );
     
-    // Enqueue Tinder-style animations CSS
+    // Enqueue carousel animations CSS
     wp_enqueue_style(
-        'yuv-tournament-tinder',
-        get_stylesheet_directory_uri() . '/css/tournament-tinder.css',
+        'yuv-tournament-carousel',
+        get_stylesheet_directory_uri() . '/css/tournament-carousel.css',
         ['yuv-tournament-arena'],
         '1.0.0'
     );
 
-    // Enqueue tournament JS - Tinder style
+    // Enqueue tournament JS - Carousel style
     wp_enqueue_script(
-        'yuv-tournament-tinder',
-        get_stylesheet_directory_uri() . '/js/tournament-tinder.js',
+        'yuv-tournament-carousel',
+        get_stylesheet_directory_uri() . '/js/tournament-carousel.js',
         ['jquery'],
         '1.0.0',
         true
     );
 
-    // Localize script with AJAX data for Tinder-style voting
-    wp_localize_script('yuv-tournament-tinder', 'yuvTournamentData', [
+    // Localize script with AJAX data for carousel voting
+    wp_localize_script('yuv-tournament-carousel', 'yuvTournamentData', [
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('yuv_tournament_vote_nonce'),
     ]);
