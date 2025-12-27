@@ -29,13 +29,13 @@ function yuv_tournament_metabox_callback($post) {
         'yuv-tournament-meta-admin',
         get_stylesheet_directory_uri() . '/js/admin/admin-tournament-meta.js',
         ['jquery'],
-        '1.0.0',
+        '1.0.1',
         true
     );
 
     // Get existing values
     $start_date = get_post_meta($post->ID, '_yuv_start_date', true);
-    $tournament_size = get_post_meta($post->ID, '_yuv_tournament_size', true) ?: 16;
+    $tournament_size = (int) get_post_meta($post->ID, '_yuv_tournament_size', true) ?: 16;
     $of_duration = get_post_meta($post->ID, '_yuv_round_duration_of', true) ?: 24;
     $qf_duration = get_post_meta($post->ID, '_yuv_round_duration_qf', true) ?: 24;
     $sf_duration = get_post_meta($post->ID, '_yuv_round_duration_sf', true) ?: 24;
@@ -43,35 +43,227 @@ function yuv_tournament_metabox_callback($post) {
     $contestants = get_post_meta($post->ID, '_yuv_contestants', true) ?: [];
     $bracket_created = get_post_meta($post->ID, '_yuv_bracket_created', true);
     $bracket_lists = get_post_meta($post->ID, '_yuv_bracket_lists', true) ?: [];
-    $contestants_count = count($contestants);
+    $contestants_count = is_array($contestants) ? count($contestants) : 0;
+    
+    // Get categories for dropdown
+    $categories = get_terms([
+        'taxonomy' => 'voting_list_category',
+        'hide_empty' => false,
+        'orderby' => 'name',
+        'order' => 'ASC'
+    ]);
 
     ?>
     <div class="yuv-tournament-meta">
         <style>
-            .yuv-tournament-meta { padding: 15px; }
+            .yuv-tournament-meta { padding: 20px; max-width: 900px; }
+            
+            .yuv-meta-section { 
+                background: #fff; 
+                border: 1px solid #ddd; 
+                border-radius: 8px; 
+                padding: 20px; 
+                margin-bottom: 25px;
+            }
+            .yuv-meta-section h3 { 
+                margin: 0 0 20px 0; 
+                padding-bottom: 10px; 
+                border-bottom: 2px solid #2271b1;
+                color: #2271b1;
+                font-size: 18px;
+            }
+            
             .yuv-meta-row { margin-bottom: 20px; }
-            .yuv-meta-row label { display: block; font-weight: 600; margin-bottom: 8px; }
+            .yuv-meta-row label { 
+                display: block; 
+                font-weight: 600; 
+                margin-bottom: 8px;
+                color: #1d2327;
+            }
+            .yuv-meta-row select,
             .yuv-meta-row input[type="datetime-local"],
             .yuv-meta-row input[type="number"],
-            .yuv-meta-row input[type="text"] { width: 100%; max-width: 400px; padding: 8px; }
-            .yuv-contestant-list { list-style: none; padding: 0; margin: 10px 0; }
-            .yuv-contestant-item { 
+            .yuv-meta-row input[type="text"] { 
+                width: 100%; 
+                max-width: 400px; 
+                padding: 10px;
+                border: 1px solid #8c8f94;
+                border-radius: 4px;
+                font-size: 14px;
+            }
+            .yuv-meta-row .description { 
+                margin: 8px 0 0 0; 
+                color: #646970; 
+                font-style: italic;
+                font-size: 13px;
+            }
+            
+            .yuv-rounds-grid {
                 display: grid;
-                grid-template-columns: 120px 1fr;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                 gap: 15px;
-                margin-bottom: 20px;
+            }
+            .yuv-round-field {
+                display: flex;
+                flex-direction: column;
+            }
+            .yuv-round-field label {
+                font-weight: 600;
+                margin-bottom: 6px;
+                font-size: 13px;
+            }
+            .yuv-round-field input {
+                padding: 8px;
+                border: 1px solid #8c8f94;
+                border-radius: 4px;
+            }
+            .yuv-round-field small {
+                margin-top: 4px;
+                color: #646970;
+                font-size: 12px;
+            }
+            
+            .yuv-contestants-section { min-height: 200px; }
+            .yuv-contestant-counter {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 12px;
+                background: #f0f0f1;
+                border-radius: 4px;
+                font-weight: 600;
+                margin-bottom: 15px;
+            }
+            .yuv-contestant-counter .count { 
+                color: #2271b1; 
+                font-size: 18px;
+            }
+            .yuv-contestant-counter .max { 
+                color: #646970; 
+            }
+            
+            .yuv-search-wrapper { 
+                position: relative; 
+                margin-bottom: 15px;
+            }
+            .yuv-category-filter {
+                margin-bottom: 12px;
+            }
+            .yuv-category-filter select {
+                width: 100%;
+                max-width: 300px;
+                padding: 8px;
+                border: 1px solid #8c8f94;
+                border-radius: 4px;
+            }
+            .yuv-search-input { 
+                width: 100%;
+                padding: 12px 15px;
+                border: 2px solid #2271b1;
+                border-radius: 6px;
+                font-size: 14px;
+                transition: box-shadow 0.2s;
+            }
+            .yuv-search-input:focus {
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+            }
+            .yuv-search-results {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                max-height: 350px;
+                overflow-y: auto;
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                display: none;
+                margin-top: 4px;
+            }
+            .yuv-search-result-item {
+                padding: 12px;
+                border-bottom: 1px solid #f0f0f0;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                transition: background 0.15s;
+            }
+            .yuv-search-result-item:hover {
+                background: #f6f7f7;
+            }
+            .yuv-search-result-image {
+                width: 50px;
+                height: 50px;
+                object-fit: cover;
+                border-radius: 4px;
+                flex-shrink: 0;
+            }
+            .yuv-search-result-info h4 {
+                margin: 0 0 4px 0;
+                font-size: 14px;
+                color: #1d2327;
+            }
+            .yuv-search-result-info p {
+                margin: 0;
+                font-size: 12px;
+                color: #646970;
+                line-height: 1.4;
+            }
+            
+            .yuv-add-contestant-btn {
+                background: #2271b1;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 15px;
+                transition: background 0.2s;
+            }
+            .yuv-add-contestant-btn:hover:not(:disabled) {
+                background: #135e96;
+            }
+            .yuv-add-contestant-btn:disabled {
+                background: #dcdcde;
+                cursor: not-allowed;
+            }
+            
+            .yuv-contestant-list { 
+                list-style: none; 
+                padding: 0; 
+                margin: 15px 0 0 0;
+            }
+            .yuv-contestant-item { 
+                display: flex;
+                gap: 15px;
+                margin-bottom: 15px;
                 padding: 15px;
                 background: #f9f9f9;
                 border: 1px solid #ddd;
-                border-radius: 8px;
+                border-radius: 6px;
                 position: relative;
+                transition: background 0.15s;
             }
-            .yuv-contestant-image-col { display: flex; flex-direction: column; gap: 8px; }
+            .yuv-contestant-item:hover {
+                background: #f6f7f7;
+            }
+            .yuv-contestant-image-col { 
+                flex-shrink: 0;
+                display: flex; 
+                flex-direction: column; 
+                gap: 8px;
+            }
             .yuv-contestant-image-preview { 
                 width: 100px;
                 height: 100px;
-                border: 2px dashed #ddd;
-                border-radius: 8px;
+                border: 2px dashed #c3c4c7;
+                border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -84,91 +276,106 @@ function yuv_tournament_metabox_callback($post) {
                 object-fit: cover;
             }
             .yuv-contestant-image-preview.empty {
-                color: #999;
+                color: #a7aaad;
+                font-size: 11px;
+                text-align: center;
+                padding: 5px;
+            }
+            .yuv-select-image-btn { 
+                width: 100px;
+                padding: 6px 10px;
                 font-size: 12px;
                 text-align: center;
             }
-            .yuv-select-image-btn { 
-                width: 100%;
-                padding: 6px 12px;
-                font-size: 13px;
+            .yuv-contestant-fields { 
+                flex: 1;
+                display: flex; 
+                flex-direction: column; 
+                gap: 10px;
             }
-            .yuv-contestant-fields { display: flex; flex-direction: column; gap: 10px; }
             .yuv-contestant-fields input[type="text"],
             .yuv-contestant-fields textarea { 
                 width: 100%;
-                padding: 8px;
-                border: 1px solid #ddd;
+                padding: 8px 10px;
+                border: 1px solid #c3c4c7;
                 border-radius: 4px;
+                font-size: 14px;
+            }
+            .yuv-contestant-fields input[type="text"]:focus,
+            .yuv-contestant-fields textarea:focus {
+                outline: none;
+                border-color: #2271b1;
+                box-shadow: 0 0 0 1px #2271b1;
             }
             .yuv-contestant-fields textarea {
-                min-height: 60px;
+                min-height: 70px;
                 resize: vertical;
+                font-family: inherit;
             }
             .yuv-contestant-remove { 
                 position: absolute;
-                top: 10px;
-                right: 10px;
-                color: #dc3545;
+                top: 12px;
+                right: 12px;
+                background: #dc3545;
+                color: white;
+                border: none;
+                width: 26px;
+                height: 26px;
+                border-radius: 50%;
                 cursor: pointer;
-                font-size: 20px;
+                font-size: 18px;
                 font-weight: bold;
                 line-height: 1;
-                padding: 5px;
-            }
-            .yuv-contestant-remove:hover { color: #a02622; }
-            .yuv-bracket-status { padding: 15px; background: #e7f3ff; border-left: 4px solid #2271b1; margin-bottom: 20px; }
-            .yuv-bracket-status.created { background: #d4edda; border-color: #28a745; }
-            .yuv-bracket-list { padding: 10px 0; }
-            .yuv-bracket-link { display: inline-block; padding: 5px 10px; background: #2271b1; color: white; text-decoration: none; border-radius: 3px; margin-right: 5px; margin-bottom: 5px; }
-            .yuv-manual-advance { margin-top: 15px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; }
-            .yuv-search-wrapper { position: relative; margin-bottom: 15px; }
-            .yuv-search-input { 
-                width: 100%;
-                padding: 10px;
-                border: 2px solid #2271b1;
-                border-radius: 6px;
-                font-size: 14px;
-            }
-            .yuv-search-results {
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: white;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                max-height: 300px;
-                overflow-y: auto;
-                z-index: 1000;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                display: none;
-            }
-            .yuv-search-result-item {
-                padding: 12px;
-                border-bottom: 1px solid #f0f0f0;
-                cursor: pointer;
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                justify-content: center;
+                transition: background 0.2s;
             }
-            .yuv-search-result-item:hover {
-                background: #f5f5f5;
+            .yuv-contestant-remove:hover { 
+                background: #a02622;
             }
-            .yuv-search-result-image {
-                width: 50px;
-                height: 50px;
-                object-fit: cover;
+            
+            .yuv-bracket-status { 
+                padding: 15px 20px; 
+                background: #e7f3ff; 
+                border-left: 4px solid #2271b1; 
+                margin-bottom: 20px;
                 border-radius: 4px;
             }
-            .yuv-search-result-info h4 {
-                margin: 0 0 4px 0;
-                font-size: 14px;
+            .yuv-bracket-status.created { 
+                background: #d4edda; 
+                border-color: #28a745;
             }
-            .yuv-search-result-info p {
+            .yuv-bracket-status h3 {
+                margin: 0 0 10px 0;
+                font-size: 16px;
+            }
+            .yuv-bracket-status p {
                 margin: 0;
-                font-size: 12px;
-                color: #666;
+            }
+            .yuv-bracket-list { 
+                margin-top: 15px;
+            }
+            .yuv-bracket-list h4 {
+                margin: 10px 0 8px 0;
+                font-size: 14px;
+                color: #1d2327;
+            }
+            .yuv-bracket-link { 
+                display: inline-block; 
+                padding: 6px 12px; 
+                background: #2271b1; 
+                color: white; 
+                text-decoration: none; 
+                border-radius: 4px; 
+                margin-right: 6px; 
+                margin-bottom: 6px;
+                font-size: 13px;
+                transition: background 0.2s;
+            }
+            .yuv-bracket-link:hover {
+                background: #135e96;
+                color: white;
             }
         </style>
 
