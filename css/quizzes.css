@@ -225,6 +225,12 @@
   color: #333;
 }
 
+.ygv-quiz-meta-item i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .ygv-quiz-meta-item svg,
 .ygv-quiz-meta-item i {
   width: 20px;
