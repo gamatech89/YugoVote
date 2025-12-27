@@ -247,13 +247,14 @@ jQuery(document).ready(function ($) {
     
     console.log("YUV Tournament: Binding navigation to", $(".yuv-nav-item").length, "items");
     
-    $(document).on("click", ".yuv-nav-item", function (e) {
+    // Use event delegation on the nav strip container for better performance
+    $(".yuv-nav-strip").on("click", ".yuv-nav-item", function (e) {
       e.preventDefault();
       e.stopPropagation();
 
       const $item = $(this);
       
-      // Get match ID from data attribute (not href!)
+      // Get match ID from data attribute
       const matchId = $item.data("match-id");
 
       console.log("YUV Tournament: Nav item clicked, match ID:", matchId);
