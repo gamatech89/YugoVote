@@ -446,7 +446,7 @@
   .yuv-match-navigation {
     gap: 8px;
   }
-  
+
   .yuv-battle-arena {
     flex-direction: column;
   }
@@ -479,4 +479,3 @@
     font-size: 48px;
   }
 }
-
