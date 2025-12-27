@@ -124,7 +124,8 @@ class YUV_Tournament_Manager {
         update_post_meta($post_id, '_yuv_stage', $stage);
         update_post_meta($post_id, '_yuv_match_number', $match_num);
         update_post_meta($post_id, '_yuv_end_time', $start_timestamp + ($duration_hours * 3600));
-        update_post_meta($post_id, '_yuv_match_completed', false);
+        update_post_meta($post_id, '_yuv_match_completed', '0');
+        update_post_meta($post_id, '_is_tournament_match', '1'); // Mark as tournament-only
 
         // Voting settings
         update_post_meta($post_id, '_voting_scale', 10);
@@ -283,7 +284,7 @@ class YUV_Tournament_Manager {
         }
 
         // Mark match as completed
-        update_post_meta($list_id, '_yuv_match_completed', true);
+        update_post_meta($list_id, '_yuv_match_completed', '1');
         update_post_meta($list_id, '_yuv_winner_id', $winner_id);
         update_post_meta($list_id, '_yuv_tie_breaker_used', $tie_breaker_used);
         update_post_meta($list_id, '_yuv_final_scores', $results);

@@ -251,7 +251,7 @@ function yuv_active_duel_shortcode($atts) {
         INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_end_time'
         WHERE p.post_type = 'voting_list'
         AND p.post_status = 'publish'
-        AND pm1.meta_value = '0'
+        AND (pm1.meta_value = '0' OR pm1.meta_value = '')
         AND pm2.meta_value > %d
         ORDER BY pm2.meta_value ASC
         LIMIT 1",

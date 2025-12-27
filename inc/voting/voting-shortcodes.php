@@ -87,11 +87,16 @@ function lists_for_current_item_shortcode($atts) {
         'posts_per_page' => -1,
         'post_status'    => 'publish',
         'meta_query'     => [
+            'relation' => 'AND',
             [
                 'key'     => '_voting_items',
                 'value'   => '"' . $current_item_id . '"',
                 'compare' => 'LIKE'
-            ]
+            ],
+            [
+                'key'     => '_is_tournament_match',
+                'compare' => 'NOT EXISTS',
+            ],
         ]
     ];
 
@@ -447,6 +452,12 @@ if (!function_exists('cs_voting_trending_shortcode')) {
             'post_status'    => 'publish',
             'posts_per_page' => -1, // Uzmi sve da bismo našli stvarne pobednike
             'fields'         => 'ids', // Trebaju nam samo ID-evi radi brzine
+            'meta_query'     => [
+                [
+                    'key'     => '_is_tournament_match',
+                    'compare' => 'NOT EXISTS',
+                ],
+            ],
         ];
 
         $all_list_ids = get_posts($all_lists_args);
