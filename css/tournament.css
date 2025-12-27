@@ -164,127 +164,12 @@
 }
 
 /* ==========================================================================
-   CONTENDERS
+   CONTENDERS (Legacy styles removed - see NEW ARENA UI section below)
    ========================================================================== */
-
-.yuv-contender {
-  flex: 1;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  overflow: hidden;
-  transition: all 0.4s ease;
-}
-
-.yuv-contender:hover .yuv-contender-img {
-  transform: scale(1.05);
-}
-
-.yuv-contender-img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  transition: transform 0.6s ease;
-}
-
-.yuv-img-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.9) 0%,
-    rgba(0, 0, 0, 0.6) 40%,
-    transparent 100%
-  );
-}
-
-.yuv-contender-info {
-  position: relative;
-  z-index: 2;
-  padding: 40px;
-  text-align: center;
-}
-
-.yuv-contender-name {
-  font-size: 42px;
-  font-weight: 900;
-  color: #fff;
-  margin: 0 0 12px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
-  line-height: 1.2;
-}
-
-.yuv-contender-bio {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.85);
-  margin: 0;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-  line-height: 1.5;
-}
 
 /* ==========================================================================
-   VOTE BUTTON
+   VOTE BUTTON (Legacy styles removed - see NEW ARENA UI section below)
    ========================================================================== */
-
-.yuv-vote-btn {
-  position: relative;
-  z-index: 3;
-  margin: 0 auto 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 18px 48px;
-  font-size: 20px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: #fff;
-  background: linear-gradient(135deg, #fe6555 0%, #ff7b6b 100%);
-  border: none;
-  border-radius: 50px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(254, 101, 85, 0.4);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.yuv-vote-btn:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(254, 101, 85, 0.6);
-  background: linear-gradient(135deg, #ff7b6b 0%, #fe6555 100%);
-}
-
-.yuv-vote-btn:active {
-  transform: translateY(-2px);
-}
-
-.yuv-vote-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  animation: none;
-}
-
-.yuv-vote-icon {
-  font-size: 24px;
-  color: #ffffff; /* White thunder icon */
-  animation: flicker 2s ease-in-out infinite;
-}
-
-.yuv-vote-text {
-  font-size: 18px;
-}
 
 /* ==========================================================================
    RESULT BAR (AFTER VOTING)
@@ -355,31 +240,8 @@
 }
 
 /* ==========================================================================
-   VS BADGE
+   VS BADGE (Legacy styles removed - see NEW ARENA UI section below)
    ========================================================================== */
-
-.yuv-vs-badge {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-  animation: rotate 20s linear infinite;
-  filter: drop-shadow(0 8px 24px rgba(254, 101, 85, 0.6));
-}
-
-.yuv-vs-badge svg {
-  display: block;
-}
-
-.yuv-lightning {
-  position: absolute;
-  top: -30px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 32px;
-  animation: flicker 1.5s ease-in-out infinite;
-}
 
 /* ==========================================================================
    TIMELINE PANEL (Enhanced with TBD & Tooltips)
@@ -987,78 +849,102 @@
   pointer-events: none;
 }
 
-/* INFO AREA: Bottom 40% - Solid Background */
+/* INFO AREA: Bottom 40% - Rich Gradient Background */
 .yuv-contender-info {
   position: relative;
   width: 100%;
   height: 40%;
-  background: linear-gradient(180deg, #16213e 0%, #0f172a 100%);
-  padding: 24px;
+  background: linear-gradient(180deg, #1a2332 0%, #0d1117 100%);
+  padding: 28px 24px 24px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   text-align: center;
+  border-top: 1px solid rgba(254, 101, 85, 0.2);
 }
 
 .yuv-contender-name {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 900;
   color: #fff;
   margin: 0;
   text-transform: uppercase;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  line-height: 1.2;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+  line-height: 1.1;
+  letter-spacing: 1px;
 }
 
 .yuv-contender-bio {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.75);
   margin: 0;
-  line-height: 1.5;
-  max-width: 90%;
+  line-height: 1.6;
+  max-width: 85%;
+  font-weight: 400;
 }
 
-/* VOTE BUTTON - NO PULSE, Static & Professional */
+/* VOTE BUTTON - Static, Clean, Professional (NO PULSING!) */
 .yuv-vote-btn {
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 14px 36px;
-  font-size: 16px;
+  padding: 16px 40px;
+  font-size: 17px;
   font-weight: 800;
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   color: #fff;
   background: linear-gradient(135deg, #fe6555 0%, #ff7043 100%);
   border: none;
   border-radius: 50px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(254, 101, 85, 0.4);
+  box-shadow: 0 6px 20px rgba(254, 101, 85, 0.3);
   transition: all 0.3s ease;
-  margin-top: 8px;
+  margin-top: 12px;
+  position: relative !important;
+  /* Force overrides */
+  animation: none !important;
+  z-index: 5 !important;
 }
 
 .yuv-vote-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(254, 101, 85, 0.6);
-  background: linear-gradient(135deg, #ff7043 0%, #fe6555 100%);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 28px rgba(254, 101, 85, 0.5);
+  background: linear-gradient(135deg, #ff7d5f 0%, #fe6555 100%);
 }
 
 .yuv-vote-btn:active {
-  transform: translateY(0);
+  transform: translateY(-1px) scale(1);
 }
 
 .yuv-vote-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
+  transform: none !important;
+  animation: none !important;
 }
 
 .yuv-vote-icon {
   font-size: 20px;
-  /* NO animation - static icon */
+  display: inline-flex;
+  align-items: center;
+  /* NO animation whatsoever */
+  animation: none !important;
+}
+
+.yuv-vote-icon img {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.yuv-vote-text {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 1px;
 }
 
 /* Result Overlay - Shows after vote */
@@ -1124,47 +1010,36 @@
   text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
 }
 
-/* VS BADGE - Static Circle, Subtle Lightning Animation Only */
+/* VS BADGE - Completely Static, Professional Design */
 .yuv-vs-badge {
-  position: absolute;
-  top: 30%; /* Position at image level */
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 90px;
-  height: 90px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 4px solid #fe6555;
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  border: 5px solid #fe6555;
   border-radius: 50%;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  /* NO pulse animation on badge itself */
+  box-shadow: 0 8px 32px rgba(254, 101, 85, 0.4),
+              inset 0 2px 8px rgba(255, 255, 255, 0.5);
+  /* NO animations at all */
+  animation: none !important;
 }
 
-.yuv-vs-badge span,
-.yuv-vs-badge .lightning-icon {
-  font-size: 42px;
+.yuv-vs-badge span {
+  font-size: 44px;
   font-weight: 900;
   color: #fe6555;
-  text-shadow: 0 2px 4px rgba(254, 101, 85, 0.3);
-  /* Subtle rotate animation on icon ONLY */
-  animation: lightning-subtle 3s ease-in-out infinite;
-}
-
-/* Subtle lightning wiggle - very gentle */
-@keyframes lightning-subtle {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(-8deg);
-  }
-  75% {
-    transform: rotate(8deg);
-  }
+  text-shadow: 0 2px 8px rgba(254, 101, 85, 0.3);
+  letter-spacing: 2px;
+  /* NO animation */
+  animation: none !important;
+  transform: none !important;
 }
 
 /* Navigation Strip (Horizontal Scroll) */

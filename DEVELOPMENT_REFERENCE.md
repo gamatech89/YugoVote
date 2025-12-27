@@ -18,12 +18,14 @@
 YugoVote is a modular WordPress voting & quiz platform built as a child theme for Hello Elementor.
 
 ### Core Features
+
 - **Voting System**: Lists, items, categories, and tournament brackets
-- **Quiz System**: Multi-level quizzes with token-based progression  
+- **Quiz System**: Multi-level quizzes with token-based progression
 - **Polls**: Standalone voting polls
 - **Account System**: Custom authentication and user profiles
 
 ### Technology Stack
+
 - **Backend**: PHP 8.0+, WordPress 6.0+, MySQL custom tables
 - **Frontend**: jQuery, AJAX (no REST API), Shortcode-based delivery
 - **Styling**: Custom CSS with gradient-heavy design system
@@ -98,6 +100,7 @@ if (file_exists($module_path . 'helpers.php')) {
 ### Function Prefixes by Module
 
 **Tournament Module** → `yuv_` prefix:
+
 ```php
 function yuv_cast_tournament_vote_ajax() { ... }
 function yuv_render_arena($match_id) { ... }
@@ -105,6 +108,7 @@ function yuv_active_duel_shortcode() { ... }
 ```
 
 **All Other Modules** → `cs_` prefix (legacy):
+
 ```php
 function cs_add_voting_list_columns($columns) { ... }
 function cs_register_poll_cpt() { ... }
@@ -118,6 +122,7 @@ function cs_voting_mega_menu_shortcode() { ... }
 ### Database-Driven Progress Tracking
 
 Tournament matches are special `voting_list` posts with metadata:
+
 - `_is_tournament_match` = '1'
 - `_yuv_tournament_id` = parent tournament post ID
 - `_yuv_stage` = 'of' | 'qf' | 'sf' | 'final'
@@ -137,7 +142,7 @@ Tournament matches are special `voting_list` posts with metadata:
    {
      "success": true,
      "results": [{"id": 123, "votes": 45, "percent": 55}],
-     "next_match": {...}, 
+     "next_match": {...},
      "progress": {"total": 8, "voted": 3, "percent": 37}
    }
    ```
@@ -160,22 +165,26 @@ Tournament matches are special `voting_list` posts with metadata:
 ### Custom Tables
 
 **`wp_voting_list_votes`** - All votes (tournament & regular)
+
 ```sql
 id, voting_list_id, voting_item_id, user_id, ip_address, vote_value, created_at
 ```
 
 **`wp_voting_list_item_relations`** - Many-to-many pivot
+
 ```sql
-id, voting_list_id, voting_item_id, short_description, long_description, 
+id, voting_list_id, voting_item_id, short_description, long_description,
 custom_image_url, url, created_at, updated_at
 ```
 
 **`wp_ygv_user_overall_progress`** - Quiz progress
+
 ```sql
 user_id, overall_level, updated_at
 ```
 
 ### Migrations
+
 - Located in: `inc/migrations/`
 - Run automatically on theme activation via `migrations-init.php`
 
@@ -184,12 +193,14 @@ user_id, overall_level, updated_at
 ## 🎨 Design System
 
 ### Brand Colors
+
 - Primary: `#4355A4` (Indigo)
 - Secondary: `#FE6555` (Coral)
 - Gold: `#FFD700` (Success/Winner)
 - Dark: `#16213e` → `#0f172a` (Gradients)
 
 ### UI Patterns
+
 - **Split-Screen Duel**: 60% image / 40% info area
 - **Gradients**: Heavy use throughout (135deg angles)
 - **Animations**: Subtle only (no pulsing buttons)
@@ -200,12 +211,14 @@ user_id, overall_level, updated_at
 ## 🚀 Common Workflows
 
 ### Add New Module
+
 1. Create folder: `inc/[module]/`
 2. Copy init template (see above)
 3. Create `cpts/cpt-[name].php`
 4. Add to `inc/init.php`: `require_once ... '[module]-init.php';`
 
 ### Add AJAX Endpoint
+
 1. Create handler in `inc/[module]/api/[module]-ajax.php`:
    ```php
    add_action('wp_ajax_my_action', 'cs_my_action_handler');
@@ -214,6 +227,7 @@ user_id, overall_level, updated_at
 2. In JS: `$.ajax({ url: ajaxurl, action: 'my_action', ... })`
 
 ### Add Admin Columns
+
 1. Create `inc/[module]/admin/[module]-columns.php`
 2. Hook into:
    - `manage_{$post_type}_posts_columns`
@@ -257,6 +271,7 @@ tail -f wp-content/debug.log
 ## 📝 Recent Major Changes
 
 ### Tournament UI Refactor (Dec 27, 2025)
+
 - ✅ Removed all pulsing animations
 - ✅ Implemented seamless AJAX navigation (no page reloads)
 - ✅ Fixed contender layout (60/40 image/info split)
@@ -264,12 +279,14 @@ tail -f wp-content/debug.log
 - ✅ Database-driven progress tracking
 
 **Files Modified**:
+
 - `css/tournament.css` - Complete UI overhaul
 - `js/tournament.js` - AJAX navigation rewrite
 - `inc/voting/tournament/api/tournament-ajax.php` - New endpoint
 - `inc/voting/tournament/shortcodes/bracket-shortcode.php` - Extracted rendering
 
 ### Module Structure Refactor (Dec 26, 2025)
+
 - ✅ Moved taxonomies to `cpts/` folders
 - ✅ Created module-specific `admin/` folders
 - ✅ Extracted admin filters from global admin file
