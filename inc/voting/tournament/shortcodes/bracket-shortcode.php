@@ -451,6 +451,7 @@ function yuv_active_duel_shortcode($atts) {
          data-match-id="<?php echo esc_attr($match_id); ?>"
          data-stage="<?php echo esc_attr($stage); ?>"
          data-total-matches="<?php echo esc_attr($total_stage_matches); ?>"
+         data-voted-matches="<?php echo esc_attr($user_votes_in_stage); ?>"
          data-user-voted="<?php echo $has_voted ? 'true' : 'false'; ?>"
          data-end-time="<?php echo esc_attr($end_time); ?>"
          data-all-votes-complete="<?php echo $all_stage_votes_complete ? 'true' : 'false'; ?>">
@@ -476,9 +477,12 @@ function yuv_active_duel_shortcode($atts) {
         <!-- Progress Bar (inside arena) -->
         <div class="yuv-progress-container">
             <div id="yuv-progress-bar" class="yuv-progress-bar">
-                <div class="yuv-progress-fill" style="width: 0%"></div>
+                <?php
+                $progress_percent = $total_stage_matches > 0 ? ($user_votes_in_stage / $total_stage_matches) * 100 : 0;
+                ?>
+                <div class="yuv-progress-fill" style="width: <?php echo esc_attr($progress_percent); ?>%"></div>
             </div>
-            <div id="yuv-progress-text" class="yuv-progress-text">0/<?php echo esc_html($total_stage_matches); ?> duels completed</div>
+            <div id="yuv-progress-text" class="yuv-progress-text"><?php echo esc_html($user_votes_in_stage); ?>/<?php echo esc_html($total_stage_matches); ?> duels completed</div>
         </div>
 
         <!-- Battle Arena -->

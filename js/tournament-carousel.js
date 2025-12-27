@@ -13,11 +13,9 @@ jQuery(document).ready(function ($) {
   let endTime = parseInt(arena.data("end-time"));
   const hasVoted = arena.data("user-voted") === "true";
 
-  // Progress tracking
+  // Progress tracking - from server (database)
   let totalMatches = parseInt(arena.data("total-matches") || 0);
-  let votedMatches = parseInt(
-    localStorage.getItem(`yuv_voted_${tournamentId}_${stage}`) || 0
-  );
+  let votedMatches = parseInt(arena.data("voted-matches") || 0);
 
   updateProgressBar();
 
@@ -99,13 +97,12 @@ jQuery(document).ready(function ($) {
       },
       success: function (response) {
         if (response.success) {
-          // Update progress
-          votedMatches++;
-          localStorage.setItem(
-            `yuv_voted_${tournamentId}_${stage}`,
-            votedMatches
-          );
-          updateProgressBar();
+          // Update progress from server response
+          if (response.data.progress) {
+            votedMatches = response.data.progress.voted;
+            totalMatches = response.data.progress.total;
+            updateProgressBar();
+          }
 
           // Animate winner (scale up) and loser (fade out)
           const $winner = contender;
@@ -115,13 +112,13 @@ jQuery(document).ready(function ($) {
           $loser.addClass("yuv-loser-animation");
 
           setTimeout(function () {
-            // Check if there are more matches
-            if (votedMatches >= totalMatches) {
-              // All matches completed - show bracket
-              showFinalBracket();
+            // Check if there's a next match
+            if (response.data.next_match) {
+              // Load next match data
+              loadNextMatch(response.data.next_match);
             } else {
-              // Load next match
-              loadNextMatch();
+              // All matches completed - show completion message
+              showStageComplete();
             }
           }, 1200);
         } else {
@@ -146,49 +143,30 @@ jQuery(document).ready(function ($) {
   // LOAD NEXT MATCH
   // ========================================================================
 
-  function loadNextMatch() {
-    $.ajax({
-      url: yuvTournamentData.ajaxurl,
-      type: "POST",
-      data: {
-        action: "yuv_get_next_match",
-        tournament_id: tournamentId,
-        stage: stage,
-      },
-      success: function (response) {
-        if (response.success) {
-          const data = response.data;
+  function loadNextMatch(matchData) {
+    if (!matchData) return;
+    
+    // Update current match data
+    currentMatchId = matchData.match_id;
+    endTime = matchData.end_time;
 
-          // Update match data
-          currentMatchId = data.match_id;
-          endTime = data.end_time;
+    // Slide out current content
+    arena.addClass("yuv-slide-out");
 
-          // Slide out current content
-          arena.addClass("yuv-slide-out");
+    setTimeout(function () {
+      // Update content with new match data
+      updateArenaContent(matchData);
 
-          setTimeout(function () {
-            // Update content
-            updateArenaContent(data);
+      // Slide in new content
+      arena.removeClass("yuv-slide-out").addClass("yuv-slide-in");
 
-            // Slide in new content
-            arena.removeClass("yuv-slide-out").addClass("yuv-slide-in");
+      setTimeout(function () {
+        arena.removeClass("yuv-slide-in");
+      }, 600);
+    }, 600);
 
-            setTimeout(function () {
-              arena.removeClass("yuv-slide-in");
-            }, 600);
-          }, 600);
-
-          // Restart timer
-          updateTimer();
-        } else if (response.data && response.data.completed) {
-          // All matches done
-          showFinalBracket();
-        }
-      },
-      error: function () {
-        alert("Greška pri učitavanju sledećeg meča.");
-      },
-    });
+    // Restart timer
+    updateTimer();
   }
 
   // ========================================================================
@@ -196,11 +174,21 @@ jQuery(document).ready(function ($) {
   // ========================================================================
 
   function updateArenaContent(data) {
-    const item1 = data.item1;
-    const item2 = data.item2;
+    const contenders = data.contenders;
+    if (!contenders || contenders.length < 2) return;
+    
+    const item1 = contenders[0];
+    const item2 = contenders[1];
 
-    // Update match number
-    $(".yuv-arena-header h2").text(`OSMINA FINALA ${data.match_number || ""}`);
+    // Update match number with stage name
+    const stageNames = {
+      'of': 'OSMINA FINALA',
+      'qf': 'ČETVRTFINALE',
+      'sf': 'POLUFINALE',
+      'final': 'FINALE'
+    };
+    const stageName = stageNames[data.stage] || 'DUEL';
+    $(".yuv-arena-header h2").text(`${stageName} ${data.match_number || ""}`);
 
     // Update arena data attributes
     arena.attr({
@@ -216,7 +204,7 @@ jQuery(document).ready(function ($) {
     const $contender1 = $contenders.eq(0);
     $contender1.removeClass("yuv-winner-animation yuv-loser-animation");
     const $img1 = $contender1.find(".yuv-contender-img");
-    $img1.attr("src", item1.image + "?t=" + Date.now()); // Force reload
+    $img1.attr("src", item1.image + "?t=" + Date.now());
     $contender1.find(".yuv-contender-name").text(item1.name);
     $contender1.find(".yuv-contender-desc").text(item1.description);
     $contender1
@@ -231,7 +219,7 @@ jQuery(document).ready(function ($) {
     const $contender2 = $contenders.eq(1);
     $contender2.removeClass("yuv-winner-animation yuv-loser-animation");
     const $img2 = $contender2.find(".yuv-contender-img");
-    $img2.attr("src", item2.image + "?t=" + Date.now()); // Force reload
+    $img2.attr("src", item2.image + "?t=" + Date.now());
     $contender2.find(".yuv-contender-name").text(item2.name);
     $contender2.find(".yuv-contender-desc").text(item2.description);
     $contender2
@@ -244,7 +232,22 @@ jQuery(document).ready(function ($) {
   }
 
   // ========================================================================
-  // SHOW FINAL BRACKET
+  // SHOW STAGE COMPLETE
+  // ========================================================================
+
+  function showStageComplete() {
+    arena.html(`
+      <div class="yuv-stage-complete">
+        <div class="yuv-complete-icon">✓</div>
+        <h2>Završili ste sve mečeve u ovoj fazi!</h2>
+        <p>Vratite se kasnije za sledeću rundu.</p>
+        <a href="${window.location.origin}" class="yuv-btn-primary">Nazad na početnu</a>
+      </div>
+    `);
+  }
+
+  // ========================================================================
+  // SHOW FINAL BRACKET (deprecated)
   // ========================================================================
 
   function showFinalBracket() {

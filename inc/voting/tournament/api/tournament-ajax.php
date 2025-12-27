@@ -193,14 +193,36 @@ function yuv_cast_tournament_vote_ajax() {
         wp_send_json_error(['message' => 'Greška pri beleženju glasa']);
     }
     
-    // Find next match in same stage that user hasn't voted in
+    // Get tournament and stage info
     $tournament_id = get_post_meta($match_id, '_yuv_tournament_id', true);
     $stage = get_post_meta($match_id, '_yuv_stage', true);
     
-    // Build the query based on whether user is logged in or guest
+    // Find next unvoted match and get its full data
+    $next_match_data = yuv_find_next_unvoted_match($tournament_id, $stage, $user_id, $user_ip);
+    
+    // Calculate user's progress in this stage
+    $progress = yuv_calculate_stage_progress($tournament_id, $stage, $user_id, $user_ip);
+    
+    $response_data = [
+        'message' => 'Glas uspešno zabeležen!',
+        'vote_id' => $wpdb->insert_id,
+        'next_match' => $next_match_data,
+        'progress' => $progress,
+    ];
+
+    wp_send_json_success($response_data);
+}
+
+/**
+ * Find next unvoted match in same stage for user/IP
+ * Returns full match data ready for rendering
+ */
+function yuv_find_next_unvoted_match($tournament_id, $stage, $user_id, $user_ip) {
+    global $wpdb;
+    $current_time = current_time('timestamp');
+    
     if ($user_id > 0) {
-        // Logged in user - check by user_id
-        $next_match = $wpdb->get_var($wpdb->prepare(
+        $next_match_id = $wpdb->get_var($wpdb->prepare(
             "SELECT p.ID
             FROM {$wpdb->posts} p
             INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_stage'
@@ -220,11 +242,10 @@ function yuv_cast_tournament_vote_ajax() {
             $user_id,
             $stage,
             $tournament_id,
-            current_time('timestamp')
+            $current_time
         ));
     } else {
-        // Guest - check by IP address
-        $next_match = $wpdb->get_var($wpdb->prepare(
+        $next_match_id = $wpdb->get_var($wpdb->prepare(
             "SELECT p.ID
             FROM {$wpdb->posts} p
             INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_stage'
@@ -244,21 +265,107 @@ function yuv_cast_tournament_vote_ajax() {
             $user_ip,
             $stage,
             $tournament_id,
-            current_time('timestamp')
+            $current_time
         ));
     }
     
-    $response_data = [
-        'message' => 'Glas uspešno zabeležen!',
-        'vote_id' => $wpdb->insert_id,
-    ];
-    
-    if ($next_match) {
-        $response_data['next_match_url'] = get_permalink($next_match);
-        $response_data['next_match_id'] = $next_match;
+    if (!$next_match_id) {
+        return null;
     }
+    
+    return yuv_get_match_data($next_match_id);
+}
 
-    wp_send_json_success($response_data);
+/**
+ * Get full match data for rendering
+ */
+function yuv_get_match_data($match_id) {
+    $items = get_post_meta($match_id, '_voting_items', true) ?: [];
+    if (count($items) < 2) {
+        return null;
+    }
+    
+    $end_time = (int) get_post_meta($match_id, '_yuv_end_time', true);
+    $stage = get_post_meta($match_id, '_yuv_stage', true);
+    $match_number = get_post_meta($match_id, '_yuv_match_number', true);
+    
+    $contenders = [];
+    foreach ($items as $item_id) {
+        $item = get_post($item_id);
+        if (!$item) continue;
+        
+        $contenders[] = [
+            'id' => $item_id,
+            'name' => $item->post_title,
+            'description' => get_post_meta($item_id, '_short_description', true) ?: wp_trim_words($item->post_content, 20),
+            'image' => get_post_meta($item_id, '_custom_image_url', true) ?: get_the_post_thumbnail_url($item_id, 'large'),
+        ];
+    }
+    
+    return [
+        'match_id' => $match_id,
+        'stage' => $stage,
+        'match_number' => $match_number,
+        'end_time' => $end_time,
+        'contenders' => $contenders,
+    ];
+}
+
+/**
+ * Calculate user's progress in a stage
+ */
+function yuv_calculate_stage_progress($tournament_id, $stage, $user_id, $user_ip) {
+    global $wpdb;
+    
+    // Total matches in this stage
+    $total = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*)
+        FROM {$wpdb->posts} p
+        INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_stage'
+        INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_tournament_id'
+        WHERE p.post_type = 'voting_list'
+        AND pm1.meta_value = %s
+        AND pm2.meta_value = %d",
+        $stage,
+        $tournament_id
+    ));
+    
+    // Matches user has voted in
+    if ($user_id > 0) {
+        $voted = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT v.voting_list_id)
+            FROM {$wpdb->prefix}voting_list_votes v
+            INNER JOIN {$wpdb->postmeta} pm1 ON v.voting_list_id = pm1.post_id AND pm1.meta_key = '_yuv_stage'
+            INNER JOIN {$wpdb->postmeta} pm2 ON v.voting_list_id = pm2.post_id AND pm2.meta_key = '_yuv_tournament_id'
+            WHERE v.user_id = %d
+            AND pm1.meta_value = %s
+            AND pm2.meta_value = %d",
+            $user_id,
+            $stage,
+            $tournament_id
+        ));
+    } else {
+        $voted = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT v.voting_list_id)
+            FROM {$wpdb->prefix}voting_list_votes v
+            INNER JOIN {$wpdb->postmeta} pm1 ON v.voting_list_id = pm1.post_id AND pm1.meta_key = '_yuv_stage'
+            INNER JOIN {$wpdb->postmeta} pm2 ON v.voting_list_id = pm2.post_id AND pm2.meta_key = '_yuv_tournament_id'
+            WHERE v.user_id = 0 
+            AND v.ip_address = %s
+            AND pm1.meta_value = %s
+            AND pm2.meta_value = %d",
+            $user_ip,
+            $stage,
+            $tournament_id
+        ));
+    }
+    
+    return [
+        'total' => (int) $total,
+        'voted' => (int) $voted,
+        'remaining' => (int) ($total - $voted),
+        'percent' => $total > 0 ? round(($voted / $total) * 100) : 0,
+    ];
 }
 
 /**
