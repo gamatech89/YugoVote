@@ -29,7 +29,13 @@ const Templates = {
           </span>
         </div>
       `
-          : ""
+          : `
+        <div class="ygv-quiz-header">
+          <span class="ygv-quiz-badge" style="background-color: var(--quiz-primary-color);">
+            ${quiz.category_name}
+          </span>
+        </div>
+      `
       }
       
       <div class="ygv-quiz-body">
@@ -39,8 +45,12 @@ const Templates = {
         <div class="ygv-quiz-meta">
           <div class="ygv-quiz-meta-item">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
             </svg>
             <span>${quiz.num_questions} pitanja</span>
           </div>
@@ -113,7 +123,7 @@ const Templates = {
     </div>
   `,
 
-  summaryScreen: (score, total) => `
+  summaryScreen: (score, total, isGuest = false) => `
     <div class="ygv-quiz-summary fade-in">
       <div class="ygv-summary-icon">
         ${score >= total * 0.7 ? "🎉" : score >= total * 0.4 ? "👍" : "💪"}
@@ -133,7 +143,19 @@ const Templates = {
       <p class="ygv-summary-percent">${Math.round(
         (score / total) * 100
       )}% tačnih odgovora</p>
-      <button class="ygv-btn-primary" onclick="window.location.reload()" style="background-color: var(--quiz-primary-color);">
+      
+      ${
+        isGuest
+          ? `
+        <div class="ygv-guest-cta">
+          <p class="ygv-guest-cta-text">Želiš još kvizova i čuvanje rezultata?</p>
+          <a href="/registracija" class="ygv-guest-cta-btn">Kreiraj Nalog Besplatno</a>
+        </div>
+      `
+          : ""
+      }
+      
+      <button class="ygv-btn-primary" onclick="window.location.reload()" style="background-color: var(--quiz-primary-color); margin-top: 20px;">
         Pokušaj ponovo
       </button>
     </div>
@@ -142,14 +164,16 @@ const Templates = {
   loginPrompt: () => `
     <div class="ygv-login-prompt fade-in">
       <div class="ygv-login-icon">🔒</div>
-      <h2>Prijava Potrebna</h2>
-      <p>Da biste igrali ovaj kviz, morate biti prijavljeni.</p>
-      <button class="ygv-btn-primary" onclick="window.location.href='/login'" style="background-color: var(--quiz-primary-color);">
-        Prijavi se
-      </button>
-      <button class="ygv-btn-secondary" onclick="window.location.reload()">
-        Nazad
-      </button>
+      <h2>Za ovaj kviz je potrebna prijava</h2>
+      <p>Prijavite se da biste igrali i osvajali bodove.</p>
+      <div class="ygv-login-buttons">
+        <a href="/login" class="ygv-btn-primary" style="background-color: var(--quiz-primary-color);">
+          Prijavi se
+        </a>
+        <a href="/registracija" class="ygv-btn-secondary">
+          Registruj se
+        </a>
+      </div>
     </div>
   `,
 };
@@ -183,7 +207,11 @@ class Quiz {
       window.dispatchEvent(new CustomEvent("ygv:state:changed"));
       return r;
     } catch (error) {
-      if (error.message && error.message.includes("prijavljeni")) {
+      if (
+        error.message &&
+        (error.message.includes("prijavljeni") ||
+          error.message.includes("login"))
+      ) {
         this.controller.showLoginPrompt();
         throw error;
       }
@@ -546,7 +574,8 @@ class QuizController {
     }
     this.container.innerHTML = Templates.summaryScreen(
       this.quiz.score,
-      this.quiz.quizData.length
+      this.quiz.quizData.length,
+      this.quiz.isGuest
     );
     this.sounds.background.pause();
   }
