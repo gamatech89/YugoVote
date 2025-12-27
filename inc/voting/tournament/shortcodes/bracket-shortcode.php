@@ -461,14 +461,23 @@ function yuv_active_duel_shortcode($atts) {
                         $future_items = get_post_meta($future->ID, '_voting_items', true) ?: [];
                         $future_time = (int) $future->end_time;
                         
-                        // Time formatting logic
+                        // Time formatting logic with better relative time
                         $time_diff = $future_time - $current_time;
                         $days_until = floor($time_diff / 86400);
                         
-                        if ($days_until == 0) {
+                        // Get start of today for accurate day comparison
+                        $today_start = strtotime('today', $current_time);
+                        $match_day_start = strtotime('today', $future_time);
+                        $days_diff = floor(($match_day_start - $today_start) / 86400);
+                        
+                        if ($days_diff == 0) {
                             $time_label = 'Danas, ' . date('H:i', $future_time);
-                        } elseif ($days_until == 1) {
+                        } elseif ($days_diff == 1) {
                             $time_label = 'Sutra, ' . date('H:i', $future_time);
+                        } elseif ($days_diff <= 6) {
+                            // Show day name for next week
+                            $days = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
+                            $time_label = $days[date('w', $future_time)] . ', ' . date('H:i', $future_time);
                         } else {
                             $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
                             $days = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];

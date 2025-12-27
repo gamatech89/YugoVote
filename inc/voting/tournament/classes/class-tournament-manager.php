@@ -33,16 +33,19 @@ class YUV_Tournament_Manager {
         // Calculate start timestamp
         $start_timestamp = strtotime($start_date);
 
-        // Create 4 Quarterfinal matches
+        // Create 4 Quarterfinal matches (1 per day for 4 days)
         for ($i = 0; $i < 4; $i++) {
             $match_num = $i + 1;
             $contestant1 = $contestants[$i * 2];
             $contestant2 = $contestants[$i * 2 + 1];
 
+            // Each QF starts 1 day after the previous one
+            $qf_start = $start_timestamp + ($i * 86400); // 86400 = 1 day in seconds
+
             $list_id = $this->create_match(
                 "$tournament_title - Četvrtfinale $match_num",
                 [$contestant1, $contestant2],
-                $start_timestamp,
+                $qf_start,
                 $qf_duration,
                 $tournament_id,
                 'qf',
@@ -52,12 +55,17 @@ class YUV_Tournament_Manager {
             $lists['qf'][] = $list_id;
         }
 
-        // Create 2 Semifinal matches (future posts)
-        $sf_start = $start_timestamp + ($qf_duration * 3600);
+        // Create 2 Semifinal matches (1 per day for days 5-6)
+        // SF starts 4 days after tournament start (after all QFs)
+        $sf_start_base = $start_timestamp + (4 * 86400);
         $sf_duration = (int) get_post_meta($tournament_id, '_yuv_round_duration_sf', true) ?: 24;
 
         for ($i = 0; $i < 2; $i++) {
             $match_num = $i + 1;
+            
+            // Each SF starts 1 day after the previous (day 5 and day 6)
+            $sf_start = $sf_start_base + ($i * 86400);
+            
             $list_id = $this->create_match(
                 "$tournament_title - Polufinale $match_num",
                 [], // Empty initially
@@ -78,9 +86,10 @@ class YUV_Tournament_Manager {
             update_post_meta($qf2_id, '_yuv_next_match', $list_id);
         }
 
-        // Create Final match (future post)
-        $final_start = $sf_start + ($sf_duration * 3600);
-        $final_duration = (int) get_post_meta($tournament_id, '_yuv_round_duration_final', true) ?: 48;
+        // Create Final match (day 7)
+        // Final starts 6 days after tournament start (after all QFs and SFs)
+        $final_start = $start_timestamp + (6 * 86400);
+        $final_duration = (int) get_post_meta($tournament_id, '_yuv_round_duration_final', true) ?: 24;
 
         $final_id = $this->create_match(
             "$tournament_title - FINALE",

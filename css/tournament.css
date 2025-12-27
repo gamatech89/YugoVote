@@ -237,19 +237,19 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   color: #fff;
-  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  background: linear-gradient(135deg, #fe6555 0%, #ff7b6b 100%);
   border: none;
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+  box-shadow: 0 8px 24px rgba(254, 101, 85, 0.4);
   animation: pulse 2s ease-in-out infinite;
 }
 
 .yuv-vote-btn:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 32px rgba(254, 101, 85, 0.6);
-  background: linear-gradient(135deg, #ff8566 0%, #fe6555 100%);
+  background: linear-gradient(135deg, #ff7b6b 0%, #fe6555 100%);
 }
 
 .yuv-vote-btn:active {
