@@ -21,6 +21,9 @@ add_action('add_meta_boxes', 'yuv_add_tournament_metabox');
 function yuv_tournament_metabox_callback($post) {
     wp_nonce_field('yuv_tournament_meta_save', 'yuv_tournament_meta_nonce');
 
+    // Enqueue media uploader
+    wp_enqueue_media();
+
     // Get existing values
     $start_date = get_post_meta($post->ID, '_yuv_start_date', true);
     $qf_duration = get_post_meta($post->ID, '_yuv_round_duration_qf', true) ?: 24;
@@ -40,15 +43,121 @@ function yuv_tournament_metabox_callback($post) {
             .yuv-meta-row input[type="number"],
             .yuv-meta-row input[type="text"] { width: 100%; max-width: 400px; padding: 8px; }
             .yuv-contestant-list { list-style: none; padding: 0; margin: 10px 0; }
-            .yuv-contestant-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; padding: 10px; background: #f9f9f9; border-radius: 5px; }
-            .yuv-contestant-item input { flex: 1; }
-            .yuv-contestant-image { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; }
-            .yuv-contestant-remove { color: #dc3545; cursor: pointer; font-weight: bold; }
+            .yuv-contestant-item { 
+                display: grid;
+                grid-template-columns: 120px 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+                padding: 15px;
+                background: #f9f9f9;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                position: relative;
+            }
+            .yuv-contestant-image-col { display: flex; flex-direction: column; gap: 8px; }
+            .yuv-contestant-image-preview { 
+                width: 100px;
+                height: 100px;
+                border: 2px dashed #ddd;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #fff;
+                overflow: hidden;
+            }
+            .yuv-contestant-image-preview img { 
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .yuv-contestant-image-preview.empty {
+                color: #999;
+                font-size: 12px;
+                text-align: center;
+            }
+            .yuv-select-image-btn { 
+                width: 100%;
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+            .yuv-contestant-fields { display: flex; flex-direction: column; gap: 10px; }
+            .yuv-contestant-fields input[type="text"],
+            .yuv-contestant-fields textarea { 
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+            .yuv-contestant-fields textarea {
+                min-height: 60px;
+                resize: vertical;
+            }
+            .yuv-contestant-remove { 
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                color: #dc3545;
+                cursor: pointer;
+                font-size: 20px;
+                font-weight: bold;
+                line-height: 1;
+                padding: 5px;
+            }
+            .yuv-contestant-remove:hover { color: #a02622; }
             .yuv-bracket-status { padding: 15px; background: #e7f3ff; border-left: 4px solid #2271b1; margin-bottom: 20px; }
             .yuv-bracket-status.created { background: #d4edda; border-color: #28a745; }
             .yuv-bracket-list { padding: 10px 0; }
             .yuv-bracket-link { display: inline-block; padding: 5px 10px; background: #2271b1; color: white; text-decoration: none; border-radius: 3px; margin-right: 5px; margin-bottom: 5px; }
             .yuv-manual-advance { margin-top: 15px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; }
+            .yuv-search-wrapper { position: relative; margin-bottom: 15px; }
+            .yuv-search-input { 
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #2271b1;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            .yuv-search-results {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                max-height: 300px;
+                overflow-y: auto;
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                display: none;
+            }
+            .yuv-search-result-item {
+                padding: 12px;
+                border-bottom: 1px solid #f0f0f0;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .yuv-search-result-item:hover {
+                background: #f5f5f5;
+            }
+            .yuv-search-result-image {
+                width: 50px;
+                height: 50px;
+                object-fit: cover;
+                border-radius: 4px;
+            }
+            .yuv-search-result-info h4 {
+                margin: 0 0 4px 0;
+                font-size: 14px;
+            }
+            .yuv-search-result-info p {
+                margin: 0;
+                font-size: 12px;
+                color: #666;
+            }
         </style>
 
         <?php if ($bracket_created && !empty($bracket_lists)): ?>
@@ -142,53 +251,42 @@ function yuv_tournament_metabox_callback($post) {
         <!-- Contestants -->
         <div class="yuv-meta-row">
             <label>👥 Takmičari (8 kandidata):</label>
+            
+            <?php if (!$bracket_created): ?>
+                <!-- Search Existing Voting Items -->
+                <div class="yuv-search-wrapper">
+                    <input type="text" 
+                           id="yuv-candidate-search" 
+                           class="yuv-search-input" 
+                           placeholder="🔍 Pretraži postojeće kandidate (voting_items)..."
+                           autocomplete="off">
+                    <div id="yuv-search-results" class="yuv-search-results"></div>
+                </div>
+            <?php endif; ?>
+
             <ul class="yuv-contestant-list" id="yuv-contestant-list">
                 <?php 
+                // Render existing contestants
                 if (!empty($contestants) && is_array($contestants)) {
                     foreach ($contestants as $index => $contestant) {
                         $name = $contestant['name'] ?? '';
-                        $image = $contestant['image'] ?? '';
-                        ?>
-                        <li class="yuv-contestant-item" data-index="<?php echo $index; ?>">
-                            <?php if ($image): ?>
-                                <img src="<?php echo esc_url($image); ?>" class="yuv-contestant-image">
-                            <?php endif; ?>
-                            <input type="text" 
-                                   name="yuv_contestants[<?php echo $index; ?>][name]" 
-                                   placeholder="Ime takmičara" 
-                                   value="<?php echo esc_attr($name); ?>"
-                                   <?php echo $bracket_created ? 'readonly' : ''; ?>>
-                            <input type="url" 
-                                   name="yuv_contestants[<?php echo $index; ?>][image]" 
-                                   placeholder="URL slike" 
-                                   value="<?php echo esc_url($image); ?>"
-                                   <?php echo $bracket_created ? 'readonly' : ''; ?>>
-                            <?php if (!$bracket_created): ?>
-                                <span class="yuv-contestant-remove" onclick="removeContestant(this)">✖</span>
-                            <?php endif; ?>
-                        </li>
-                        <?php
+                        $description = $contestant['description'] ?? '';
+                        $image_id = $contestant['image_id'] ?? '';
+                        $image_url = $contestant['image_url'] ?? '';
+                        
+                        // Get image URL from attachment ID if available
+                        if ($image_id && !$image_url) {
+                            $image_url = wp_get_attachment_image_url($image_id, 'thumbnail');
+                        }
+
+                        yuv_render_contestant_row($index, $name, $description, $image_id, $image_url, $bracket_created);
                     }
                 }
                 
                 // Fill remaining slots to 8
                 $count = is_array($contestants) ? count($contestants) : 0;
                 for ($i = $count; $i < 8; $i++) {
-                    ?>
-                    <li class="yuv-contestant-item" data-index="<?php echo $i; ?>">
-                        <input type="text" 
-                               name="yuv_contestants[<?php echo $i; ?>][name]" 
-                               placeholder="Ime takmičara"
-                               <?php echo $bracket_created ? 'readonly' : ''; ?>>
-                        <input type="url" 
-                               name="yuv_contestants[<?php echo $i; ?>][image]" 
-                               placeholder="URL slike"
-                               <?php echo $bracket_created ? 'readonly' : ''; ?>>
-                        <?php if (!$bracket_created): ?>
-                            <span class="yuv-contestant-remove" onclick="removeContestant(this)">✖</span>
-                        <?php endif; ?>
-                    </li>
-                    <?php
+                    yuv_render_contestant_row($i, '', '', '', '', $bracket_created);
                 }
                 ?>
             </ul>
@@ -196,14 +294,135 @@ function yuv_tournament_metabox_callback($post) {
     </div>
 
     <script>
-    function removeContestant(el) {
-        if (confirm('Obrisati takmičara?')) {
-            el.closest('.yuv-contestant-item').remove();
-        }
-    }
-
-    // Manual advance button
     jQuery(document).ready(function($) {
+        let searchTimer;
+        const $searchInput = $('#yuv-candidate-search');
+        const $searchResults = $('#yuv-search-results');
+
+        // Search candidates (debounced)
+        $searchInput.on('input', function() {
+            clearTimeout(searchTimer);
+            const query = $(this).val().trim();
+
+            if (query.length < 2) {
+                $searchResults.hide().empty();
+                return;
+            }
+
+            searchTimer = setTimeout(function() {
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'yuv_search_voting_items',
+                        query: query,
+                        nonce: '<?php echo wp_create_nonce('yuv_search_items'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success && response.data.length > 0) {
+                            renderSearchResults(response.data);
+                        } else {
+                            $searchResults.html('<div style="padding: 12px; color: #666;">Nema rezultata</div>').show();
+                        }
+                    }
+                });
+            }, 300);
+        });
+
+        // Render search results
+        function renderSearchResults(items) {
+            let html = '';
+            items.forEach(item => {
+                html += `
+                    <div class="yuv-search-result-item" data-item='${JSON.stringify(item)}'>
+                        ${item.image ? `<img src="${item.image}" class="yuv-search-result-image">` : ''}
+                        <div class="yuv-search-result-info">
+                            <h4>${item.name}</h4>
+                            ${item.description ? `<p>${item.description}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            $searchResults.html(html).show();
+        }
+
+        // Select item from search results
+        $searchResults.on('click', '.yuv-search-result-item', function() {
+            const item = $(this).data('item');
+            
+            // Find first empty row
+            const $emptyRow = $('.yuv-contestant-item').filter(function() {
+                return $(this).find('input[name*="[name]"]').val() === '';
+            }).first();
+
+            if ($emptyRow.length === 0) {
+                alert('Svi slotovi su popunjeni! Obrišite neki postojeći kandidat.');
+                return;
+            }
+
+            // Auto-fill fields
+            $emptyRow.find('input[name*="[name]"]').val(item.name);
+            $emptyRow.find('textarea[name*="[description]"]').val(item.description || '');
+            
+            if (item.image_id) {
+                $emptyRow.find('input[name*="[image_id]"]').val(item.image_id);
+                $emptyRow.find('input[name*="[image_url]"]').val(item.image);
+                $emptyRow.find('.yuv-contestant-image-preview')
+                    .removeClass('empty')
+                    .html(`<img src="${item.image}" alt="${item.name}">`);
+            }
+
+            // Clear search
+            $searchInput.val('');
+            $searchResults.hide().empty();
+        });
+
+        // Close search results when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.yuv-search-wrapper').length) {
+                $searchResults.hide();
+            }
+        });
+
+        // Media uploader
+        $('.yuv-contestant-list').on('click', '.yuv-select-image-btn', function(e) {
+            e.preventDefault();
+            
+            const $button = $(this);
+            const $row = $button.closest('.yuv-contestant-item');
+            const $preview = $row.find('.yuv-contestant-image-preview');
+            const $imageIdInput = $row.find('input[name*="[image_id]"]');
+            const $imageUrlInput = $row.find('input[name*="[image_url]"]');
+
+            const frame = wp.media({
+                title: 'Izaberite sliku kandidata',
+                button: { text: 'Koristi ovu sliku' },
+                multiple: false
+            });
+
+            frame.on('select', function() {
+                const attachment = frame.state().get('selection').first().toJSON();
+                
+                $imageIdInput.val(attachment.id);
+                $imageUrlInput.val(attachment.url);
+                $preview.removeClass('empty').html(
+                    `<img src="${attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url}" alt="Candidate">`
+                );
+            });
+
+            frame.open();
+        });
+
+        // Remove contestant
+        $('.yuv-contestant-list').on('click', '.yuv-contestant-remove', function() {
+            if (confirm('Obrisati takmičara?')) {
+                const $row = $(this).closest('.yuv-contestant-item');
+                $row.find('input, textarea').val('');
+                $row.find('.yuv-contestant-image-preview').addClass('empty').html('Nema slike');
+            }
+        });
+
+        // Manual advance button
         $('#yuv-manual-advance-btn').on('click', function() {
             const btn = $(this);
             const tournamentId = <?php echo $post->ID; ?>;
@@ -230,6 +449,53 @@ function yuv_tournament_metabox_callback($post) {
         });
     });
     </script>
+    <?php
+}
+
+/**
+ * Render single contestant row
+ */
+function yuv_render_contestant_row($index, $name, $description, $image_id, $image_url, $readonly = false) {
+    ?>
+    <li class="yuv-contestant-item" data-index="<?php echo $index; ?>">
+        <div class="yuv-contestant-image-col">
+            <div class="yuv-contestant-image-preview <?php echo empty($image_url) ? 'empty' : ''; ?>">
+                <?php if ($image_url): ?>
+                    <img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr($name); ?>">
+                <?php else: ?>
+                    Nema slike
+                <?php endif; ?>
+            </div>
+            <?php if (!$readonly): ?>
+                <button type="button" class="button yuv-select-image-btn">
+                    <?php echo empty($image_url) ? 'Izaberi Sliku' : 'Promeni Sliku'; ?>
+                </button>
+            <?php endif; ?>
+            <input type="hidden" 
+                   name="yuv_contestants[<?php echo $index; ?>][image_id]" 
+                   value="<?php echo esc_attr($image_id); ?>">
+            <input type="hidden" 
+                   name="yuv_contestants[<?php echo $index; ?>][image_url]" 
+                   value="<?php echo esc_url($image_url); ?>">
+        </div>
+
+        <div class="yuv-contestant-fields">
+            <input type="text" 
+                   name="yuv_contestants[<?php echo $index; ?>][name]" 
+                   placeholder="Ime takmičara" 
+                   value="<?php echo esc_attr($name); ?>"
+                   <?php echo $readonly ? 'readonly' : ''; ?>>
+            
+            <textarea 
+                name="yuv_contestants[<?php echo $index; ?>][description]" 
+                placeholder="Kratak opis / biografija"
+                <?php echo $readonly ? 'readonly' : ''; ?>><?php echo esc_textarea($description); ?></textarea>
+        </div>
+
+        <?php if (!$readonly): ?>
+            <span class="yuv-contestant-remove" title="Obriši kandidata">×</span>
+        <?php endif; ?>
+    </li>
     <?php
 }
 
@@ -268,7 +534,9 @@ function yuv_save_tournament_meta($post_id) {
             if (!empty($contestant['name'])) {
                 $contestants[] = [
                     'name' => sanitize_text_field($contestant['name']),
-                    'image' => esc_url_raw($contestant['image'] ?? ''),
+                    'description' => sanitize_textarea_field($contestant['description'] ?? ''),
+                    'image_id' => intval($contestant['image_id'] ?? 0),
+                    'image_url' => esc_url_raw($contestant['image_url'] ?? ''),
                 ];
             }
         }

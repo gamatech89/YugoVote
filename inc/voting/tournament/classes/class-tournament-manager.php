@@ -133,16 +133,28 @@ class YUV_Tournament_Manager {
         $item_ids = [];
         if (!empty($contestants)) {
             foreach ($contestants as $contestant) {
+                // Create voting item post
                 $item_id = wp_insert_post([
                     'post_type' => 'voting_items',
                     'post_title' => $contestant['name'],
                     'post_status' => 'publish',
+                    'post_content' => $contestant['description'] ?? '', // Save description as content
                 ]);
 
                 if (!is_wp_error($item_id)) {
-                    // Set featured image if URL provided
-                    if (!empty($contestant['image'])) {
-                        update_post_meta($item_id, '_custom_image_url', $contestant['image']);
+                    // Set featured image from attachment ID
+                    if (!empty($contestant['image_id'])) {
+                        set_post_thumbnail($item_id, $contestant['image_id']);
+                    }
+                    
+                    // Also save custom image URL as meta (for backward compatibility)
+                    if (!empty($contestant['image_url'])) {
+                        update_post_meta($item_id, '_custom_image_url', $contestant['image_url']);
+                    }
+
+                    // Save short description meta
+                    if (!empty($contestant['description'])) {
+                        update_post_meta($item_id, '_short_description', $contestant['description']);
                     }
 
                     // Add to relation table
@@ -151,7 +163,7 @@ class YUV_Tournament_Manager {
                         [
                             'voting_list_id' => $post_id,
                             'voting_item_id' => $item_id,
-                            'custom_image_url' => $contestant['image'] ?? null,
+                            'custom_image_url' => $contestant['image_url'] ?? null,
                         ]
                     );
 
@@ -280,7 +292,9 @@ class YUV_Tournament_Manager {
         $next_match_id = get_post_meta($list_id, '_yuv_next_match', true);
         
         if (!$next_match_id) {
-            // This is the final
+            // This is the final - store winner in tournament meta
+            update_post_meta($tournament_id, '_yuv_winner_id', $winner_id);
+            
             return [
                 'success' => true,
                 'list_id' => $list_id,
@@ -295,18 +309,29 @@ class YUV_Tournament_Manager {
         // Clone winner to next match
         $next_items = get_post_meta($next_match_id, '_voting_items', true) ?: [];
         
-        // Create new voting item for next round
+        // Create new voting item for next round (clone original)
         $winner_data = get_post($winner_id);
-        $winner_image = get_post_meta($winner_id, '_custom_image_url', true);
+        $winner_image_id = get_post_thumbnail_id($winner_id);
+        $winner_image_url = get_post_meta($winner_id, '_custom_image_url', true);
+        $winner_description = get_post_meta($winner_id, '_short_description', true);
 
         $new_item_id = wp_insert_post([
             'post_type' => 'voting_items',
             'post_title' => $winner_data->post_title,
+            'post_content' => $winner_data->post_content,
             'post_status' => 'publish',
         ]);
 
-        if ($winner_image) {
-            update_post_meta($new_item_id, '_custom_image_url', $winner_image);
+        if ($winner_image_id) {
+            set_post_thumbnail($new_item_id, $winner_image_id);
+        }
+        
+        if ($winner_image_url) {
+            update_post_meta($new_item_id, '_custom_image_url', $winner_image_url);
+        }
+        
+        if ($winner_description) {
+            update_post_meta($new_item_id, '_short_description', $winner_description);
         }
 
         // Add to next match relation
@@ -315,7 +340,7 @@ class YUV_Tournament_Manager {
             [
                 'voting_list_id' => $next_match_id,
                 'voting_item_id' => $new_item_id,
-                'custom_image_url' => $winner_image,
+                'custom_image_url' => $winner_image_url,
             ]
         );
 
