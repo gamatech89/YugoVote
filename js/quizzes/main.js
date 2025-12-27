@@ -254,7 +254,7 @@ class Quiz {
                         <div class="cs-quiz-topbar">
                             <div class="cs-step-counter" id="quiz-counter"></div>
                              <div class="cs-controlls">
-                              <button class="cs-close-button" style="color: #1f2937 !important;">❌</button>
+                              <button class="cs-close-button"><i class="ri-close-line"></i></button>
                              </div>
                         </div>
                         <div class="cs-quiz-container"></div>
@@ -376,7 +376,9 @@ class QuizController {
 
   createMuteButton() {
     const muteButton = document.createElement("button");
-    muteButton.innerText = this.isMuted ? "🔇" : "🔊";
+    muteButton.innerHTML = this.isMuted
+      ? '<i class="ri-volume-mute-line"></i>'
+      : '<i class="ri-volume-up-line"></i>';
     muteButton.classList.add("cs-mute-button");
     muteButton.onclick = () => this.toggleMute(muteButton);
 
@@ -386,7 +388,9 @@ class QuizController {
   toggleMute(button) {
     this.isMuted = !this.isMuted;
     localStorage.setItem("quizMuted", this.isMuted);
-    button.innerText = this.isMuted ? "🔇" : "🔊";
+    button.innerHTML = this.isMuted
+      ? '<i class="ri-volume-mute-line"></i>'
+      : '<i class="ri-volume-up-line"></i>';
     Object.values(this.sounds).forEach((sound) => (sound.muted = this.isMuted));
   }
 

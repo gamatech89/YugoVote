@@ -69,28 +69,49 @@
   gap: 10px;
 }
 
-/* ✅ STEP 3: Fix invisible controls - Force dark color */
+/* ✅ Modern Icon Buttons with Quiz Accent Color */
 .cs-close-button,
 .cs-mute-button {
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  font-size: 18px;
-  color: #1f2937; /* ✅ Dark grey/black for visibility */
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border-radius: 10px;
+  font-size: 20px;
+  color: #374151;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.cs-close-button i,
+.cs-mute-button i {
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 0.2s ease;
 }
 
 .cs-close-button:hover,
 .cs-mute-button:hover {
-  background: rgba(0, 0, 0, 0.1);
-  color: var(--quiz-primary-color, #6a0dad); /* ✅ Primary color on hover */
-  transform: scale(1.05);
+  background: var(--quiz-primary-color, #6a0dad);
+  border-color: var(--quiz-primary-color, #6a0dad);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(106, 13, 173, 0.3);
+}
+
+.cs-close-button:hover i,
+.cs-mute-button:hover i {
+  transform: scale(1.1);
+}
+
+.cs-close-button:active,
+.cs-mute-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .cs-quiz-container {
