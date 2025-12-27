@@ -69,7 +69,7 @@ function yuv_search_voting_items_ajax() {
     if ($category > 0) {
         $args['tax_query'] = [
             [
-                'taxonomy' => 'voting_list_category',
+                'taxonomy' => 'voting_item_category',
                 'field' => 'term_id',
                 'terms' => $category,
             ]

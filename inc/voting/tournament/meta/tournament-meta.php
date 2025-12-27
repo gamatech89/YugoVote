@@ -51,9 +51,9 @@ function yuv_tournament_metabox_callback($post) {
     $bracket_lists = get_post_meta($post->ID, '_yuv_bracket_lists', true);
     $bracket_lists = is_array($bracket_lists) ? $bracket_lists : [];
     
-    // Get categories for filter
+    // Get categories for filter (voting_item_category for filtering voting_items)
     $categories = get_terms([
-        'taxonomy' => 'voting_list_category',
+        'taxonomy' => 'voting_item_category',
         'hide_empty' => false,
         'orderby' => 'name',
         'order' => 'ASC'
