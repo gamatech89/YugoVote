@@ -469,6 +469,9 @@ function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $al
 
                     <div class="yuv-contender-info">
                         <h2 class="yuv-contender-name"><?php echo esc_html($left['name']); ?></h2>
+                        <?php if (!empty($left['bio'])): ?>
+                            <p class="yuv-contender-bio"><?php echo esc_html($left['bio']); ?></p>
+                        <?php endif; ?>
                         
                         <?php if (!$has_voted): ?>
                             <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
@@ -503,6 +506,9 @@ function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $al
 
                     <div class="yuv-contender-info">
                         <h2 class="yuv-contender-name"><?php echo esc_html($right['name']); ?></h2>
+                        <?php if (!empty($right['bio'])): ?>
+                            <p class="yuv-contender-bio"><?php echo esc_html($right['bio']); ?></p>
+                        <?php endif; ?>
                         
                         <?php if (!$has_voted): ?>
                             <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">

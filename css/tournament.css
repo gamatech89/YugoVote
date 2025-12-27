@@ -1213,8 +1213,6 @@ FIX 1: Add margin-top & remove animations */
 
 /* Nav Item - Card Design with Proper Spacing */
 .yuv-nav-item {
-  position: reFIX 5: Clickable thumbnails */
-.yuv-nav-item {
   position: relative;
   flex-shrink: 0;
   width: 140px;
@@ -1487,4 +1485,53 @@ FIX 1: Add margin-top & remove animations */
   .yuv-vote-count {
     font-size: 14px;
   }
+}
+
+/* ==========================================================================
+   WORDPRESS COMPATIBILITY FIXES
+   ========================================================================== */
+
+/* Force emoji images in buttons to display inline */
+.yuv-vote-btn img.emoji {
+  width: 18px !important;
+  height: 18px !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Force navigation thumbnails to exact size */
+.yuv-nav-thumbs img {
+  width: 50px !important;
+  height: 50px !important;
+  max-width: 50px !important;
+  max-height: 50px !important;
+  min-width: 50px !important;
+  min-height: 50px !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+/* Ensure contender images fill the container properly */
+.yuv-contender-img {
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Bio text styling */
+.yuv-contender-bio {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 auto 0;
+  line-height: 1.5;
+  max-width: 95%;
+  font-weight: 400;
+  text-align: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 0 8px;
 }
