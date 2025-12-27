@@ -565,7 +565,10 @@ function yuv_render_arena($match_id, $tournament_id, $tournament_title, $all_mat
     return ob_get_clean();
 }
 
-/**render_no_duel() {
+/**
+ * No duel message
+ */
+function yuv_render_no_duel() {
     return '<div class="yuv-no-duel">
         <div class="yuv-no-duel-icon">⚔️</div>
         <h3>Trenutno nema aktivnih duela</h3>
@@ -576,10 +579,7 @@ function yuv_render_arena($match_id, $tournament_id, $tournament_title, $all_mat
 /**
  * Stage complete message
  */
-function yuv_render_stage_complet
- * Stage complete message
- */
-function yuv_stage_complete_message() {
+function yuv_render_stage_complete() {
     return '<div class="yuv-stage-complete">
         <div class="yuv-complete-icon">🏆</div>
         <h2>Završili ste sve trenutne duelove!</h2>
