@@ -52,6 +52,8 @@ function yuv_search_voting_items_ajax() {
     }
 
     $query = sanitize_text_field($_POST['query'] ?? '');
+    $category = sanitize_text_field($_POST['category'] ?? '');
+    
     if (strlen($query) < 2) {
         wp_send_json_error(['message' => 'Pretraga mora biti duža od 2 karaktera']);
     }
@@ -62,6 +64,17 @@ function yuv_search_voting_items_ajax() {
         'posts_per_page' => 10,
         's' => $query,
     ];
+
+    // Add category filter if provided
+    if (!empty($category) && $category !== 'all') {
+        $args['tax_query'] = [
+            [
+                'taxonomy' => 'voting_list_category',
+                'field' => 'slug',
+                'terms' => $category,
+            ]
+        ];
+    }
 
     $items_query = new WP_Query($args);
     $results = [];

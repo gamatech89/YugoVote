@@ -24,8 +24,18 @@ function yuv_tournament_metabox_callback($post) {
     // Enqueue media uploader
     wp_enqueue_media();
 
+    // Enqueue tournament meta admin script
+    wp_enqueue_script(
+        'yuv-tournament-meta-admin',
+        get_stylesheet_directory_uri() . '/js/admin/admin-tournament-meta.js',
+        ['jquery'],
+        '1.0.0',
+        true
+    );
+
     // Get existing values
     $start_date = get_post_meta($post->ID, '_yuv_start_date', true);
+    $tournament_size = get_post_meta($post->ID, '_yuv_tournament_size', true) ?: 16;
     $of_duration = get_post_meta($post->ID, '_yuv_round_duration_of', true) ?: 24;
     $qf_duration = get_post_meta($post->ID, '_yuv_round_duration_qf', true) ?: 24;
     $sf_duration = get_post_meta($post->ID, '_yuv_round_duration_sf', true) ?: 24;
@@ -33,6 +43,7 @@ function yuv_tournament_metabox_callback($post) {
     $contestants = get_post_meta($post->ID, '_yuv_contestants', true) ?: [];
     $bracket_created = get_post_meta($post->ID, '_yuv_bracket_created', true);
     $bracket_lists = get_post_meta($post->ID, '_yuv_bracket_lists', true) ?: [];
+    $contestants_count = count($contestants);
 
     ?>
     <div class="yuv-tournament-meta">
@@ -201,7 +212,7 @@ function yuv_tournament_metabox_callback($post) {
         <?php else: ?>
             <div class="yuv-bracket-status">
                 <h3>⚠️ Bracket još nije kreiran</h3>
-                <p>Nakon što dodate 8 takmičara i datum početka, kliknite "Publish" ili "Update" da bi se automatski kreirao bracket.</p>
+                <p>Nakon što dodate <?php echo $tournament_size; ?> takmičara i datum početka, kliknite "Publish" ili "Update" da bi se automatski kreirao bracket.</p>
             </div>
         <?php endif; ?>
 
@@ -263,11 +274,42 @@ function yuv_tournament_metabox_callback($post) {
             <p class="description">Dan 4: Finale</p>
         </div>
 
+        <!-- Tournament Size -->
+        <div class="yuv-meta-row">
+            <label for="yuv_tournament_size">🏆 Broj takmičara:</label>
+            <select id="yuv_tournament_size" name="yuv_tournament_size" <?php echo $bracket_created ? 'disabled' : ''; ?>>
+                <option value="8" <?php selected($tournament_size, 8); ?>>8 takmičara (Bez osmina finala)</option>
+                <option value="16" <?php selected($tournament_size, 16); ?>>16 takmičara (Sa osminama finala)</option>
+            </select>
+            <?php if ($bracket_created): ?>
+                <p class="description">Broj takmičara se ne može menjati nakon kreiranja bracket-a.</p>
+            <?php else: ?>
+                <p class="description" id="tournament-size-info">Sa <?php echo $tournament_size; ?> takmičara imaćete <?php echo $tournament_size == 16 ? '4 dana (OF + QF + SF + Final)' : '3 dana (QF + SF + Final)'; ?></p>
+            <?php endif; ?>
+        </div>
+
         <!-- Contestants -->
         <div class="yuv-meta-row">
-            <label>👥 Takmičari (16 kandidata):</label>
+            <label>👥 Takmičari (<span id="contestant-counter"><?php echo $contestants_count; ?></span>/<span id="contestant-max"><?php echo $tournament_size; ?></span>):</label>
             
             <?php if (!$bracket_created): ?>
+                <!-- Category Filter -->
+                <div class="yuv-category-filter" style="margin-bottom: 15px;">
+                    <label for="yuv-category-filter" style="display: inline-block; margin-right: 10px; font-weight: normal;">Kategorija:</label>
+                    <select id="yuv-category-filter" style="width: 250px;">
+                        <option value="">Sve kategorije</option>
+                        <?php 
+                        $categories = get_terms([
+                            'taxonomy' => 'voting_list_category',
+                            'hide_empty' => false,
+                        ]);
+                        foreach ($categories as $cat) {
+                            echo '<option value="' . esc_attr($cat->term_id) . '">' . esc_html($cat->name) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+                
                 <!-- Search Existing Voting Items -->
                 <div class="yuv-search-wrapper">
                     <input type="text" 
@@ -318,6 +360,7 @@ function yuv_tournament_metabox_callback($post) {
         $searchInput.on('input', function() {
             clearTimeout(searchTimer);
             const query = $(this).val().trim();
+            const category = $('#yuv-category-filter').val();
 
             if (query.length < 2) {
                 $searchResults.hide().empty();
@@ -331,6 +374,7 @@ function yuv_tournament_metabox_callback($post) {
                     data: {
                         action: 'yuv_search_voting_items',
                         query: query,
+                        category: category,
                         nonce: '<?php echo wp_create_nonce('yuv_search_items'); ?>'
                     },
                     success: function(response) {
@@ -530,6 +574,11 @@ function yuv_save_tournament_meta($post_id) {
     if (isset($_POST['yuv_start_date'])) {
         update_post_meta($post_id, '_yuv_start_date', sanitize_text_field($_POST['yuv_start_date']));
     }
+    
+    // Save tournament size
+    if (isset($_POST['yuv_tournament_size'])) {
+        update_post_meta($post_id, '_yuv_tournament_size', intval($_POST['yuv_tournament_size']));
+    }
 
     // Save stage durations
     if (isset($_POST['yuv_round_duration_of'])) {
@@ -561,11 +610,12 @@ function yuv_save_tournament_meta($post_id) {
         update_post_meta($post_id, '_yuv_contestants', $contestants);
     }
 
-    // Auto-create bracket if not created and we have 8 contestants
+    // Auto-create bracket if not created and we have correct number of contestants
     $bracket_created = get_post_meta($post_id, '_yuv_bracket_created', true);
     if (!$bracket_created) {
         $contestants = get_post_meta($post_id, '_yuv_contestants', true);
-        if (is_array($contestants) && count($contestants) === 8) {
+        $tournament_size = get_post_meta($post_id, '_yuv_tournament_size', true) ?: 16;
+        if (is_array($contestants) && count($contestants) === $tournament_size) {
             $manager = new YUV_Tournament_Manager();
             $result = $manager->create_bracket($post_id);
             
