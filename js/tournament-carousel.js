@@ -75,7 +75,7 @@ jQuery(document).ready(function ($) {
     const btn = $(this);
     const itemId = btn.data("item-id");
     const contender = btn.closest(".yuv-contender");
-    
+
     // Prevent double-clicks
     if (btn.prop("disabled")) return;
 
@@ -145,7 +145,7 @@ jQuery(document).ready(function ($) {
 
   function loadNextMatch(matchData) {
     if (!matchData) return;
-    
+
     // Update current match data
     currentMatchId = matchData.match_id;
     endTime = matchData.end_time;
@@ -176,18 +176,18 @@ jQuery(document).ready(function ($) {
   function updateArenaContent(data) {
     const contenders = data.contenders;
     if (!contenders || contenders.length < 2) return;
-    
+
     const item1 = contenders[0];
     const item2 = contenders[1];
 
     // Update match number with stage name
     const stageNames = {
-      'of': 'OSMINA FINALA',
-      'qf': 'ČETVRTFINALE',
-      'sf': 'POLUFINALE',
-      'final': 'FINALE'
+      of: "OSMINA FINALA",
+      qf: "ČETVRTFINALE",
+      sf: "POLUFINALE",
+      final: "FINALE",
     };
-    const stageName = stageNames[data.stage] || 'DUEL';
+    const stageName = stageNames[data.stage] || "DUEL";
     $(".yuv-arena-header h2").text(`${stageName} ${data.match_number || ""}`);
 
     // Update arena data attributes
