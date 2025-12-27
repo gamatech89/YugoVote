@@ -248,6 +248,25 @@ function yuv_active_duel_shortcode($atts) {
     error_log('=== Active Duel Debug ===');
     error_log('Current timestamp: ' . $current_time);
     error_log('Current datetime: ' . date('Y-m-d H:i:s', $current_time));
+    error_log('WordPress timezone: ' . get_option('timezone_string'));
+    error_log('WordPress GMT offset: ' . get_option('gmt_offset'));
+    
+    // Check tournament 32883 specifically
+    $check_tournament = $wpdb->get_results(
+        "SELECT p.ID, p.post_title, p.post_status
+        FROM {$wpdb->posts} p
+        WHERE p.post_type = 'yuv_tournament' AND p.ID = 32883"
+    );
+    error_log('Tournament 32883: ' . print_r($check_tournament, true));
+    
+    // Check what matches belong to tournament 32883
+    $matches_for_32883 = $wpdb->get_results(
+        "SELECT p.ID, p.post_title, pm.meta_value as tournament_id
+        FROM {$wpdb->posts} p
+        INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_yuv_tournament_id'
+        WHERE p.post_type = 'voting_list' AND pm.meta_value = '32883'"
+    );
+    error_log('Matches for tournament 32883: ' . print_r($matches_for_32883, true));
     
     $active_match = $wpdb->get_var($wpdb->prepare(
         "SELECT p.ID 
@@ -290,22 +309,39 @@ function yuv_active_duel_shortcode($atts) {
     $tournament_id = get_post_meta($match_id, '_yuv_tournament_id', true);
     
     error_log('Match ID: ' . $match_id);
-    error_log('Tournament ID: ' . $tournament_id);
+    error_log('Tournament ID from meta: ' . $tournament_id);
     
-    // Check if tournament still exists
+    // If tournament doesn't exist, try to find any active tournament and update the match
     $tournament_exists = get_post_status($tournament_id);
-    error_log('Tournament status: ' . ($tournament_exists ?: 'FALSE/NULL'));
-    
     if (!$tournament_exists || $tournament_exists === false) {
-        error_log('Tournament check FAILED - returning no duel message');
-        return '<div class="yuv-no-duel">
-            <div class="yuv-no-duel-icon">⚔️</div>
-            <h3>Trenutno nema aktivnih duela</h3>
-            <p>Pratite nas za najave novih turnira!</p>
-        </div>';
+        error_log('Tournament ' . $tournament_id . ' does not exist');
+        
+        // Find any active tournament
+        $active_tournament = $wpdb->get_var(
+            "SELECT ID FROM {$wpdb->posts} 
+            WHERE post_type = 'yuv_tournament' 
+            AND post_status = 'publish' 
+            ORDER BY post_date DESC 
+            LIMIT 1"
+        );
+        
+        if ($active_tournament) {
+            error_log('Found active tournament: ' . $active_tournament);
+            // Update this match to point to the active tournament
+            update_post_meta($match_id, '_yuv_tournament_id', $active_tournament);
+            $tournament_id = $active_tournament;
+            error_log('Updated match ' . $match_id . ' to tournament ' . $active_tournament);
+        } else {
+            error_log('No active tournament found - returning no duel message');
+            return '<div class="yuv-no-duel">
+                <div class="yuv-no-duel-icon">⚔️</div>
+                <h3>Trenutno nema aktivnih duela</h3>
+                <p>Pratite nas za najave novih turnira!</p>
+            </div>';
+        }
     }
     
-    error_log('Tournament check PASSED');
+    error_log('Using tournament: ' . $tournament_id);
     
     $match_title = get_the_title($match_id);
     $stage = get_post_meta($match_id, '_yuv_stage', true);
