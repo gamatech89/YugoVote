@@ -73,13 +73,9 @@ jQuery(document).ready(function ($) {
           // Show success toast
           showToast("Tvoj glas je zabeležen!");
 
-          // If there's a next match, redirect to it, otherwise reload
+          // Reload page to show results
           setTimeout(function () {
-            if (response.data.next_match_url) {
-              window.location.href = response.data.next_match_url;
-            } else {
-              location.reload();
-            }
+            location.reload();
           }, 1500);
         } else {
           alert(
@@ -150,16 +146,5 @@ jQuery(document).ready(function ($) {
       $(this).find(".yuv-contender-img").css("filter", "brightness(1)");
     });
 
-  // ========================================================================
-  // TIMELINE TOOLTIPS
-  // ========================================================================
-
-  $(".yuv-timeline-item").hover(
-    function () {
-      $(this).find(".yuv-match-tooltip").addClass("show");
-    },
-    function () {
-      $(this).find(".yuv-match-tooltip").removeClass("show");
-    }
-  );
+  // Timeline section removed for better UX
 });
