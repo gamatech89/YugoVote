@@ -210,10 +210,15 @@ class Quiz {
       window.dispatchEvent(new CustomEvent("ygv:state:changed"));
       return r;
     } catch (error) {
+      // Check for guest access restriction errors
       if (
         error.message &&
         (error.message.includes("prijavljeni") ||
-          error.message.includes("login"))
+          error.message.includes("login") ||
+          error.message.includes("prijavite") ||
+          error.message.includes("Morate biti") ||
+          error.message.includes("restricted") ||
+          error.message.includes("guests"))
       ) {
         this.controller.showLoginPrompt();
         throw error;
@@ -249,7 +254,7 @@ class Quiz {
                         <div class="cs-quiz-topbar">
                             <div class="cs-step-counter" id="quiz-counter"></div>
                              <div class="cs-controlls">
-                              <button class="cs-close-button">❌</button>
+                              <button class="cs-close-button" style="color: #1f2937 !important;">❌</button>
                              </div>
                         </div>
                         <div class="cs-quiz-container"></div>
@@ -401,7 +406,19 @@ class QuizController {
         await this.quiz.startAttempt();
         this.startQuiz();
       } catch (e) {
-        this.showError(e.message || "Neuspešno pokretanje kviza.");
+        // Check if it's a login/access error - if so, login prompt is already shown
+        const isLoginError =
+          e.message &&
+          (e.message.includes("prijavljeni") ||
+            e.message.includes("login") ||
+            e.message.includes("prijavite") ||
+            e.message.includes("Morate biti") ||
+            e.message.includes("restricted") ||
+            e.message.includes("guests"));
+
+        if (!isLoginError) {
+          this.showError(e.message || "Neuspešno pokretanje kviza.");
+        }
       }
     });
   }
