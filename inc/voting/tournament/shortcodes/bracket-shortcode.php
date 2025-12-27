@@ -548,8 +548,8 @@ function yuv_active_duel_shortcode($atts) {
 
         </div>
 
-        <!-- Enhanced Timeline Panel with TBD Logic -->
-        <?php if (!empty($all_future_matches)): ?>
+        <!-- Enhanced Timeline Panel with TBD Logic - HIDDEN FOR NOW -->
+        <?php if (false && !empty($all_future_matches)): ?>
             <div class="yuv-timeline-panel">
                 <h6 class="yuv-timeline-title">📅 Naredni Dueli</h6>
                 <div class="yuv-timeline-list">

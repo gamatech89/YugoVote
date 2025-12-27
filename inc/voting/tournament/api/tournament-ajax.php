@@ -184,7 +184,7 @@ function yuv_cast_tournament_vote_ajax() {
             'user_id' => $user_id,
             'ip_address' => $user_ip,
             'vote_value' => 10,
-            'voted_at' => current_time('mysql'),
+            'created_at' => current_time('mysql'),
         ],
         ['%d', '%d', '%d', '%s', '%d', '%s']
     );
