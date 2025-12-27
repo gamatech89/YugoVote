@@ -131,14 +131,26 @@ if ($current_user_id > 0) {
             <?php endif; ?>
 
             <!-- ✅ User Progress Bar (if completed) -->
-            <?php if ($is_completed): ?>
+            <?php if ($is_completed): 
+                // Determine color class based on percentage
+                $progress_class = '';
+                if ($best_percent >= 80) {
+                    $progress_class = 'excellent';
+                } elseif ($best_percent >= 50) {
+                    $progress_class = 'good';
+                } elseif ($best_percent >= 30) {
+                    $progress_class = 'average';
+                } else {
+                    $progress_class = 'low';
+                }
+            ?>
                 <div class="yuv-quiz-card__progress">
                     <div class="yuv-progress-bar">
-                        <div class="yuv-progress-fill" style="width: <?php echo esc_attr($best_percent); ?>%; background: var(--quiz-card-color);"></div>
+                        <div class="yuv-progress-fill <?php echo esc_attr($progress_class); ?>" style="width: <?php echo esc_attr($best_percent); ?>%;"></div>
                     </div>
                     <div class="yuv-progress-text">
-                        <span class="yuv-progress-score"><?php echo esc_html($best_percent); ?>%</span>
-                        <span class="yuv-progress-label">Tvoj najbolji rezultat</span>
+                        <span class="yuv-progress-score <?php echo esc_attr($progress_class); ?>"><?php echo esc_html($best_percent); ?>%</span>
+                        <span class="yuv-progress-label">najbolji rezultat</span>
                     </div>
                 </div>
             <?php endif; ?>
