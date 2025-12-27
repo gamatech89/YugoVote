@@ -38,13 +38,21 @@ function yuv_enqueue_tournament_assets() {
         'yuv-tournament-arena',
         get_stylesheet_directory_uri() . '/css/tournament.css',
         [],
+        '1.0.1'
+    );
+    
+    // Enqueue Tinder-style animations CSS
+    wp_enqueue_style(
+        'yuv-tournament-tinder',
+        get_stylesheet_directory_uri() . '/css/tournament-tinder.css',
+        ['yuv-tournament-arena'],
         '1.0.0'
     );
 
-    // Enqueue tournament JS
+    // Enqueue tournament JS - Tinder style
     wp_enqueue_script(
-        'yuv-tournament-arena',
-        get_stylesheet_directory_uri() . '/js/tournament.js',
+        'yuv-tournament-tinder',
+        get_stylesheet_directory_uri() . '/js/tournament-tinder.js',
         ['jquery'],
         '1.0.0',
         true

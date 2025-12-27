@@ -446,9 +446,19 @@ function yuv_active_duel_shortcode($atts) {
     ob_start();
     ?>
     
+    <!-- Progress Bar -->
+    <div class="yuv-progress-container">
+        <div id="yuv-progress-bar" class="yuv-progress-bar">
+            <div class="yuv-progress-fill" style="width: 0%"></div>
+        </div>
+        <div id="yuv-progress-text" class="yuv-progress-text">0/<?php echo esc_html($total_stage_matches); ?> duels completed</div>
+    </div>
+    
     <div class="yuv-duel-arena" 
          data-tournament-id="<?php echo esc_attr($tournament_id); ?>"
          data-match-id="<?php echo esc_attr($match_id); ?>"
+         data-stage="<?php echo esc_attr($stage); ?>"
+         data-total-matches="<?php echo esc_attr($total_stage_matches); ?>"
          data-user-voted="<?php echo $has_voted ? 'true' : 'false'; ?>"
          data-end-time="<?php echo esc_attr($end_time); ?>"
          data-all-votes-complete="<?php echo $all_stage_votes_complete ? 'true' : 'false'; ?>">
@@ -457,10 +467,9 @@ function yuv_active_duel_shortcode($atts) {
         <div class="yuv-arena-header">
             <div class="yuv-match-info">
                 <span class="yuv-tournament-badge">🏆 <?php echo esc_html($tournament_title); ?></span>
-                <h4 class="yuv-match-title">
+                <h2 class="yuv-match-title">
                     <?php echo esc_html($stage_label . ' ' . $match_number); ?>
-                    <span class="yuv-progress-badge"><?php echo $user_votes_in_stage; ?>/<?php echo $total_stage_matches; ?> glasova</span>
-                </h4>
+                </h2>
             </div>
             <div class="yuv-countdown-timer">
                 <span class="yuv-timer-label">⏱️ Preostalo vreme:</span>

@@ -255,7 +255,119 @@ function yuv_cast_tournament_vote_ajax() {
     
     if ($next_match) {
         $response_data['next_match_url'] = get_permalink($next_match);
+        $response_data['next_match_id'] = $next_match;
     }
 
     wp_send_json_success($response_data);
+}
+
+/**
+ * Get next match data for Tinder-style progression
+ */
+add_action('wp_ajax_yuv_get_next_match', 'yuv_get_next_match_ajax');
+add_action('wp_ajax_nopriv_yuv_get_next_match', 'yuv_get_next_match_ajax');
+
+function yuv_get_next_match_ajax() {
+    $user_id = is_user_logged_in() ? get_current_user_id() : 0;
+    $user_ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $tournament_id = intval($_POST['tournament_id'] ?? 0);
+    $stage = sanitize_text_field($_POST['stage'] ?? '');
+    
+    if (!$tournament_id || !$stage) {
+        wp_send_json_error(['message' => 'Nevažeći parametri']);
+    }
+
+    global $wpdb;
+    
+    // Find next unvoted match in the same stage
+    if ($user_id > 0) {
+        $next_match_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT p.ID
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_stage'
+            INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_tournament_id'
+            INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_yuv_match_completed'
+            INNER JOIN {$wpdb->postmeta} pm4 ON p.ID = pm4.post_id AND pm4.meta_key = '_yuv_end_time'
+            LEFT JOIN {$wpdb->prefix}voting_list_votes v ON p.ID = v.voting_list_id AND v.user_id = %d
+            WHERE p.post_type = 'voting_list'
+            AND p.post_status = 'publish'
+            AND pm1.meta_value = %s
+            AND pm2.meta_value = %d
+            AND (pm3.meta_value = '0' OR pm3.meta_value = '')
+            AND pm4.meta_value > %d
+            AND v.id IS NULL
+            ORDER BY pm4.meta_value ASC
+            LIMIT 1",
+            $user_id,
+            $stage,
+            $tournament_id,
+            current_time('timestamp')
+        ));
+    } else {
+        $next_match_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT p.ID
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_stage'
+            INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_tournament_id'
+            INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_yuv_match_completed'
+            INNER JOIN {$wpdb->postmeta} pm4 ON p.ID = pm4.post_id AND pm4.meta_key = '_yuv_end_time'
+            LEFT JOIN {$wpdb->prefix}voting_list_votes v ON p.ID = v.voting_list_id AND v.user_id = 0 AND v.ip_address = %s
+            WHERE p.post_type = 'voting_list'
+            AND p.post_status = 'publish'
+            AND pm1.meta_value = %s
+            AND pm2.meta_value = %d
+            AND (pm3.meta_value = '0' OR pm3.meta_value = '')
+            AND pm4.meta_value > %d
+            AND v.id IS NULL
+            ORDER BY pm4.meta_value ASC
+            LIMIT 1",
+            $user_ip,
+            $stage,
+            $tournament_id,
+            current_time('timestamp')
+        ));
+    }
+    
+    if (!$next_match_id) {
+        wp_send_json_error(['message' => 'Nema više mečeva', 'completed' => true]);
+    }
+    
+    // Get match data
+    $match_items = get_post_meta($next_match_id, '_voting_items', true) ?: [];
+    if (count($match_items) < 2) {
+        wp_send_json_error(['message' => 'Meč nema dovoljno takmičara']);
+    }
+    
+    $item1_id = $match_items[0];
+    $item2_id = $match_items[1];
+    
+    $item1 = get_post($item1_id);
+    $item2 = get_post($item2_id);
+    
+    $item1_img = get_post_meta($item1_id, '_custom_image_url', true) ?: get_the_post_thumbnail_url($item1_id, 'large');
+    $item2_img = get_post_meta($item2_id, '_custom_image_url', true) ?: get_the_post_thumbnail_url($item2_id, 'large');
+    
+    $item1_desc = get_post_meta($item1_id, '_short_description', true) ?: $item1->post_excerpt;
+    $item2_desc = get_post_meta($item2_id, '_short_description', true) ?: $item2->post_excerpt;
+    
+    $end_time = (int) get_post_meta($next_match_id, '_yuv_end_time', true);
+    $match_number = get_post_meta($next_match_id, '_yuv_match_number', true);
+    
+    wp_send_json_success([
+        'match_id' => $next_match_id,
+        'match_number' => $match_number,
+        'end_time' => $end_time,
+        'item1' => [
+            'id' => $item1_id,
+            'name' => $item1->post_title,
+            'description' => $item1_desc,
+            'image' => $item1_img,
+        ],
+        'item2' => [
+            'id' => $item2_id,
+            'name' => $item2->post_title,
+            'description' => $item2_desc,
+            'image' => $item2_img,
+        ],
+    ]);
 }
