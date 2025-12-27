@@ -26,13 +26,23 @@ jQuery(document).ready(function ($) {
 
     const matchId = $duelArena.data("match-id");
     const endTime = parseInt($duelArena.data("end-time"));
-    const hasVoted = $arenaContainer.hasClass("yuv-show-results");
+    const $arena = $(".yuv-arena-wrapper");
+    const hasVoted = $arena.hasClass("yuv-show-results");
 
     console.log("YUV Tournament Init:", {
       matchId: matchId,
       endTime: endTime,
       hasVoted: hasVoted,
     });
+
+    // If already voted, hide buttons and show results immediately
+    if (hasVoted) {
+      $(".yuv-vote-btn").hide();
+      $(".yuv-result-overlay").show();
+    } else {
+      $(".yuv-vote-btn").show();
+      $(".yuv-result-overlay").hide();
+    }
 
     // Start countdown timer if not voted
     if (!hasVoted && endTime) {
@@ -90,6 +100,7 @@ jQuery(document).ready(function ($) {
     
     $(document).on("click", ".yuv-vote-btn", function (e) {
       e.preventDefault();
+      e.stopPropagation();
 
       const $btn = $(this);
       const itemId = $btn.data("item-id");
@@ -160,8 +171,14 @@ jQuery(document).ready(function ($) {
     // Add results state class
     $arena.addClass("yuv-show-results");
     
+    // Hide all buttons and show overlays
+    $(".yuv-vote-btn").fadeOut(300);
+    $(".yuv-result-overlay").fadeIn(600);
+    
     // Mark winner
-    $winningContender.addClass("is-winner");
+    if ($winningContender) {
+      $winningContender.addClass("is-winner");
+    }
     
     // Update each contender with results
     $(".yuv-contender").each(function () {
