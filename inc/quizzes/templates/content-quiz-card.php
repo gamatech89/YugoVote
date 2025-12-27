@@ -130,31 +130,6 @@ if ($current_user_id > 0) {
                 <p class="yuv-quiz-card__excerpt"><?php echo esc_html(wp_trim_words($excerpt, 15)); ?></p>
             <?php endif; ?>
 
-            <!-- ✅ User Progress Bar (if completed) -->
-            <?php if ($is_completed): 
-                // Determine color class based on percentage
-                $progress_class = '';
-                if ($best_percent >= 80) {
-                    $progress_class = 'excellent';
-                } elseif ($best_percent >= 50) {
-                    $progress_class = 'good';
-                } elseif ($best_percent >= 30) {
-                    $progress_class = 'average';
-                } else {
-                    $progress_class = 'low';
-                }
-            ?>
-                <div class="yuv-quiz-card__progress">
-                    <div class="yuv-progress-bar">
-                        <div class="yuv-progress-fill <?php echo esc_attr($progress_class); ?>" style="width: <?php echo esc_attr($best_percent); ?>%;"></div>
-                    </div>
-                    <div class="yuv-progress-text">
-                        <span class="yuv-progress-score <?php echo esc_attr($progress_class); ?>"><?php echo esc_html($best_percent); ?>%</span>
-                        <span class="yuv-progress-label">najbolji rezultat</span>
-                    </div>
-                </div>
-            <?php endif; ?>
-
             <!-- Meta Row -->
             <div class="yuv-quiz-card__meta">
                 <div class="yuv-quiz-card__meta-item">
@@ -171,13 +146,46 @@ if ($current_user_id > 0) {
                         <span><?php echo esc_html($quiz_difficulty); ?></span>
                     </div>
                 <?php endif; ?>
+            </div>
+
+            <!-- ✅ User Progress Section (always shown for consistent layout) -->
+            <div class="yuv-quiz-card__progress">
+                <?php if ($is_completed): 
+                    // Determine color class based on percentage
+                    $progress_class = '';
+                    if ($best_percent >= 80) {
+                        $progress_class = 'excellent';
+                    } elseif ($best_percent >= 50) {
+                        $progress_class = 'good';
+                    } elseif ($best_percent >= 30) {
+                        $progress_class = 'average';
+                    } else {
+                        $progress_class = 'low';
+                    }
+                ?>
+                    <div class="yuv-progress-bar">
+                        <div class="yuv-progress-fill <?php echo esc_attr($progress_class); ?>" style="width: <?php echo esc_attr($best_percent); ?>%;"></div>
+                    </div>
+                    <div class="yuv-progress-text">
+                        <span class="yuv-progress-score <?php echo esc_attr($progress_class); ?>"><?php echo esc_html($best_percent); ?>%</span>
+                        <span class="yuv-progress-label">najbolji rezultat</span>
+                    </div>
+                <?php else: ?>
+                    <!-- Not started yet -->
+                    <div class="yuv-progress-placeholder">
+                        <i class="ri-play-circle-line"></i>
+                        <span>Još nisi igrao ovaj kviz</span>
+                    </div>
+                <?php endif; ?>
                 
-                <!-- ✅ Attempts count (if completed) -->
+                <!-- Attempts count (if any) -->
                 <?php if ($attempts > 0): ?>
-                    <div class="yuv-quiz-card__meta-item yuv-quiz-card__meta-attempts">
+                    <div class="yuv-progress-attempts">
                         <i class="ri-refresh-line"></i>
                         <span><?php echo esc_html($attempts); ?>x pokušaja</span>
                     </div>
+                <?php endif; ?>
+            </div>
                 <?php endif; ?>
             </div>
         </div>

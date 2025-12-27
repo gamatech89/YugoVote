@@ -984,8 +984,9 @@
 .yuv-quiz-card__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 8px;
   margin-top: auto;
+  margin-bottom: 12px;
 }
 
 .yuv-quiz-card__meta-item {
@@ -993,13 +994,23 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #888;
+  color: #555;
   font-weight: 500;
+  padding: 6px 12px;
+  background: #f5f5f5;
+  border-radius: 20px;
+  border: 1px solid #e5e5e5;
+  transition: all 0.2s ease;
+}
+
+.yuv-quiz-card__meta-item:hover {
+  background: #ebebeb;
+  border-color: #d5d5d5;
 }
 
 .yuv-quiz-card__meta-item i {
   font-size: 16px;
-  color: #aaa;
+  color: #888;
 }
 
 /* ========================================
@@ -1470,9 +1481,28 @@
   font-weight: 500;
 }
 
+.yuv-progress-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  color: #999;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.yuv-progress-placeholder i {
+  font-size: 18px;
+  color: #bbb;
+}
+
 .yuv-progress-attempts {
   font-size: 13px;
   color: #777;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .yuv-progress-attempts i {
