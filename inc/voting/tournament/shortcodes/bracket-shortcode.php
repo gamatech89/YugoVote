@@ -435,6 +435,9 @@ function yuv_active_duel_shortcode($atts) {
     ];
     $stage_label = $stage_labels[$stage] ?? 'Meč';
 
+    // Get tournament title
+    $tournament_title = get_the_title($tournament_id);
+    
     ob_start();
     ?>
     
@@ -447,7 +450,7 @@ function yuv_active_duel_shortcode($atts) {
         <!-- Arena Header -->
         <div class="yuv-arena-header">
             <div class="yuv-match-info">
-                <span class="yuv-tournament-badge">🏆 TOURNAMENT DUEL</span>
+                <span class="yuv-tournament-badge">🏆 <?php echo esc_html($tournament_title); ?></span>
                 <h4 class="yuv-match-title"><?php echo esc_html($stage_label . ' ' . $match_number); ?></h4>
             </div>
             <div class="yuv-countdown-timer">
@@ -539,7 +542,7 @@ function yuv_active_duel_shortcode($atts) {
         <!-- Enhanced Timeline Panel with TBD Logic -->
         <?php if (!empty($all_future_matches)): ?>
             <div class="yuv-timeline-panel">
-                <h6 class="yuv-timeline-title">📅 Sledeći duelovi</h6>
+                <h6 class="yuv-timeline-title">📅 Naredni Dueli</h6>
                 <div class="yuv-timeline-list">
                     <?php foreach ($all_future_matches as $future): 
                         $future_items = get_post_meta($future->ID, '_voting_items', true) ?: [];

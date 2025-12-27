@@ -264,6 +264,7 @@
 
 .yuv-vote-icon {
   font-size: 24px;
+  color: #ffffff; /* White thunder icon */
   animation: flicker 2s ease-in-out infinite;
 }
 
