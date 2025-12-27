@@ -73,9 +73,13 @@ jQuery(document).ready(function ($) {
           // Show success toast
           showToast("Tvoj glas je zabeležen!");
 
-          // Reload page to show results
+          // Redirect to next match if available, otherwise reload to show results
           setTimeout(function () {
-            location.reload();
+            if (response.data.next_match_url) {
+              window.location.href = response.data.next_match_url;
+            } else {
+              location.reload();
+            }
           }, 1500);
         } else {
           alert(

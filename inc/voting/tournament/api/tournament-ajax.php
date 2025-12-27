@@ -197,28 +197,56 @@ function yuv_cast_tournament_vote_ajax() {
     $tournament_id = get_post_meta($match_id, '_yuv_tournament_id', true);
     $stage = get_post_meta($match_id, '_yuv_stage', true);
     
-    $next_match = $wpdb->get_var($wpdb->prepare(
-        "SELECT p.ID
-        FROM {$wpdb->posts} p
-        INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_stage'
-        INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_tournament_id'
-        INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_yuv_match_completed'
-        INNER JOIN {$wpdb->postmeta} pm4 ON p.ID = pm4.post_id AND pm4.meta_key = '_yuv_end_time'
-        LEFT JOIN {$wpdb->prefix}voting_list_votes v ON p.ID = v.voting_list_id AND v.user_id = %d
-        WHERE p.post_type = 'voting_list'
-        AND p.post_status = 'publish'
-        AND pm1.meta_value = %s
-        AND pm2.meta_value = %d
-        AND (pm3.meta_value = '0' OR pm3.meta_value = '')
-        AND pm4.meta_value > %d
-        AND v.id IS NULL
-        ORDER BY pm4.meta_value ASC
-        LIMIT 1",
-        $user_id,
-        $stage,
-        $tournament_id,
-        current_time('timestamp')
-    ));
+    // Build the query based on whether user is logged in or guest
+    if ($user_id > 0) {
+        // Logged in user - check by user_id
+        $next_match = $wpdb->get_var($wpdb->prepare(
+            "SELECT p.ID
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_stage'
+            INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_tournament_id'
+            INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_yuv_match_completed'
+            INNER JOIN {$wpdb->postmeta} pm4 ON p.ID = pm4.post_id AND pm4.meta_key = '_yuv_end_time'
+            LEFT JOIN {$wpdb->prefix}voting_list_votes v ON p.ID = v.voting_list_id AND v.user_id = %d
+            WHERE p.post_type = 'voting_list'
+            AND p.post_status = 'publish'
+            AND pm1.meta_value = %s
+            AND pm2.meta_value = %d
+            AND (pm3.meta_value = '0' OR pm3.meta_value = '')
+            AND pm4.meta_value > %d
+            AND v.id IS NULL
+            ORDER BY pm4.meta_value ASC
+            LIMIT 1",
+            $user_id,
+            $stage,
+            $tournament_id,
+            current_time('timestamp')
+        ));
+    } else {
+        // Guest - check by IP address
+        $next_match = $wpdb->get_var($wpdb->prepare(
+            "SELECT p.ID
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_stage'
+            INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_tournament_id'
+            INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_yuv_match_completed'
+            INNER JOIN {$wpdb->postmeta} pm4 ON p.ID = pm4.post_id AND pm4.meta_key = '_yuv_end_time'
+            LEFT JOIN {$wpdb->prefix}voting_list_votes v ON p.ID = v.voting_list_id AND v.user_id = 0 AND v.ip_address = %s
+            WHERE p.post_type = 'voting_list'
+            AND p.post_status = 'publish'
+            AND pm1.meta_value = %s
+            AND pm2.meta_value = %d
+            AND (pm3.meta_value = '0' OR pm3.meta_value = '')
+            AND pm4.meta_value > %d
+            AND v.id IS NULL
+            ORDER BY pm4.meta_value ASC
+            LIMIT 1",
+            $user_ip,
+            $stage,
+            $tournament_id,
+            current_time('timestamp')
+        ));
+    }
     
     $response_data = [
         'message' => 'Glas uspešno zabeležen!',
