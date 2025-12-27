@@ -235,8 +235,9 @@ function yuv_render_tournament_bracket($tournament_id, $bracket_lists) {
 }
 
 /**
- * Active Duel Shortcode - Auto-Swipe to First Unvoted Match
+ * Active Duel Shortcode - Random Access + Auto-Swipe Navigation
  * Usage: [yuv_active_duel]
+ * Supports: ?match_id=123 for direct access OR auto-swipe to first unvoted
  */
 function yuv_active_duel_shortcode($atts) {
     global $wpdb;
@@ -255,7 +256,7 @@ function yuv_active_duel_shortcode($atts) {
     );
     
     if (!$active_tournament) {
-        return yuv_no_duel_message();
+        return yuv_render_no_duel();
     }
     
     $tournament_id = $active_tournament;
@@ -263,7 +264,7 @@ function yuv_active_duel_shortcode($atts) {
     $bracket_lists = get_post_meta($tournament_id, '_yuv_bracket_lists', true);
     
     if (empty($bracket_lists)) {
-        return yuv_no_duel_message();
+        return yuv_render_no_duel();
     }
     
     // Step 2: Get ALL active matches for this tournament
@@ -273,7 +274,7 @@ function yuv_active_duel_shortcode($atts) {
     }
     
     if (empty($all_match_ids)) {
-        return yuv_no_duel_message();
+        return yuv_render_no_duel();
     }
     
     // Step 3: Filter to only PUBLISHED matches that haven't ended
@@ -289,10 +290,18 @@ function yuv_active_duel_shortcode($atts) {
     }
     
     if (empty($active_matches)) {
-        return yuv_stage_complete_message();
+        return yuv_render_stage_complete();
     }
     
-    // Step 4: Find FIRST match where user hasn't voted
+    // Step 4: RANDOM ACCESS - Check if ?match_id is provided
+    $target_match_id = isset($_GET['match_id']) ? (int) $_GET['match_id'] : null;
+    
+    if ($target_match_id && in_array($target_match_id, $active_matches, true)) {
+        // Direct access to specific match
+        return yuv_render_arena($target_match_id, $tournament_id, $tournament_title, $active_matches, $user_id, $user_ip);
+    }
+    
+    // Step 5: AUTO-SWIPE - Find FIRST match where user hasn't voted
     $first_unvoted_match = null;
     
     foreach ($active_matches as $match_id) {
@@ -324,14 +333,14 @@ function yuv_active_duel_shortcode($atts) {
         $first_unvoted_match = $active_matches[0];
     }
     
-    // Step 5: Render the selected match
-    return yuv_render_duel_arena($first_unvoted_match, $tournament_id, $tournament_title, $active_matches, $user_id, $user_ip);
+    // Step 6: Render the selected match
+    return yuv_render_arena($first_unvoted_match, $tournament_id, $tournament_title, $active_matches, $user_id, $user_ip);
 }
 
 /**
- * Render duel arena for a specific match
+ * Render arena for a specific match with new UI
  */
-function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $all_matches, $user_id, $user_ip) {
+function yuv_render_arena($match_id, $tournament_id, $tournament_title, $all_matches, $user_id, $user_ip) {
     global $wpdb;
     
     $stage = get_post_meta($match_id, '_yuv_stage', true);
@@ -339,8 +348,10 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
     $end_time = (int) get_post_meta($match_id, '_yuv_end_time', true);
     $items = get_post_meta($match_id, '_voting_items', true) ?: [];
     
-    // Check if user voted
+    // Check if user voted - PERSISTENT STATE
     $has_voted = false;
+    $winning_item_id = null;
+    
     if ($user_id > 0) {
         $user_vote = $wpdb->get_var($wpdb->prepare(
             "SELECT voting_item_id FROM {$wpdb->prefix}voting_list_votes 
@@ -356,7 +367,11 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
             $user_ip
         ));
     }
-    $has_voted = !empty($user_vote);
+    
+    if (!empty($user_vote)) {
+        $has_voted = true;
+        $winning_item_id = (int) $user_vote;
+    }
     
     // Get contenders
     $contenders = [];
@@ -390,6 +405,7 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
     $total_votes = array_sum(array_column($contenders, 'votes'));
     foreach ($contenders as &$c) {
         $c['percent'] = $total_votes > 0 ? round(($c['votes'] / $total_votes) * 100) : 50;
+        $c['is_winner'] = ($c['id'] == $winning_item_id);
     }
 
     // Stage labels
@@ -404,26 +420,30 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
     ob_start();
     ?>
     
-    <div class="yuv-duel-arena" 
+    <div class="yuv-arena-wrapper <?php echo $has_voted ? 'yuv-show-results' : ''; ?>" 
          data-tournament-id="<?php echo esc_attr($tournament_id); ?>"
          data-match-id="<?php echo esc_attr($match_id); ?>"
          data-stage="<?php echo esc_attr($stage); ?>"
          data-user-voted="<?php echo $has_voted ? 'true' : 'false'; ?>"
          data-end-time="<?php echo esc_attr($end_time); ?>">
         
-        <!-- Arena Header (Minimal) -->
-        <div class="yuv-arena-header">
-            <h2 class="yuv-match-title">
-                <?php echo esc_html($stage_label . ' ' . $match_number); ?>
-            </h2>
+        <!-- Arena Header NEW -->
+        <div class="yuv-arena-header-new">
+            <span class="yuv-stage-pill"><?php echo esc_html($stage_label); ?></span>
+            <h2 class="yuv-tournament-name"><?php echo esc_html($tournament_title); ?></h2>
+            <h3 class="yuv-match-names">
+                <?php if (!empty($contenders[0]) && !empty($contenders[1])): ?>
+                    <?php echo esc_html($contenders[0]['name'] . ' vs ' . $contenders[1]['name']); ?>
+                <?php endif; ?>
+            </h3>
         </div>
 
-        <!-- Battle Arena (Split Screen) -->
-        <div class="yuv-battle-arena">
+        <!-- Duel Arena (Split Screen) -->
+        <div class="yuv-duel-arena">
             
             <!-- Left Contender -->
             <?php if (!empty($contenders[0])): $left = $contenders[0]; ?>
-                <div class="yuv-contender yuv-left <?php echo $has_voted ? 'voted' : ''; ?>" 
+                <div class="yuv-contender yuv-left <?php echo $left['is_winner'] ? 'is-winner' : ''; ?>" 
                      data-contender-id="<?php echo esc_attr($left['id']); ?>">
                     
                     <div class="yuv-contender-img" style="background-image: url('<?php echo esc_url($left['image']); ?>');">
@@ -437,16 +457,16 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
                         <?php endif; ?>
                     </div>
 
-                    <?php if ($has_voted): ?>
-                        <div class="yuv-result-overlay">
-                            <span class="yuv-percent"><?php echo esc_html($left['percent']); ?>%</span>
-                        </div>
-                    <?php else: ?>
-                        <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
-                            <span class="yuv-vote-icon">⚡</span>
-                            <span class="yuv-vote-text">GLASAJ</span>
-                        </button>
-                    <?php endif; ?>
+                    <div class="yuv-result-overlay">
+                        <div class="yuv-result-bar" style="width: <?php echo esc_attr($left['percent']); ?>%;"></div>
+                        <span class="yuv-percent"><?php echo esc_html($left['percent']); ?>%</span>
+                        <span class="yuv-vote-count"><?php echo esc_html(number_format($left['votes'])); ?> glasova</span>
+                    </div>
+
+                    <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
+                        <span class="yuv-vote-icon">⚡</span>
+                        <span class="yuv-vote-text">GLASAJ</span>
+                    </button>
                 </div>
             <?php endif; ?>
 
@@ -457,7 +477,7 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
 
             <!-- Right Contender -->
             <?php if (!empty($contenders[1])): $right = $contenders[1]; ?>
-                <div class="yuv-contender yuv-right <?php echo $has_voted ? 'voted' : ''; ?>" 
+                <div class="yuv-contender yuv-right <?php echo $right['is_winner'] ? 'is-winner' : ''; ?>" 
                      data-contender-id="<?php echo esc_attr($right['id']); ?>">
                     
                     <div class="yuv-contender-img" style="background-image: url('<?php echo esc_url($right['image']); ?>');">
@@ -471,23 +491,23 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
                         <?php endif; ?>
                     </div>
 
-                    <?php if ($has_voted): ?>
-                        <div class="yuv-result-overlay">
-                            <span class="yuv-percent"><?php echo esc_html($right['percent']); ?>%</span>
-                        </div>
-                    <?php else: ?>
-                        <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">
-                            <span class="yuv-vote-icon">⚡</span>
-                            <span class="yuv-vote-text">GLASAJ</span>
-                        </button>
-                    <?php endif; ?>
+                    <div class="yuv-result-overlay">
+                        <div class="yuv-result-bar" style="width: <?php echo esc_attr($right['percent']); ?>%;"></div>
+                        <span class="yuv-percent"><?php echo esc_html($right['percent']); ?>%</span>
+                        <span class="yuv-vote-count"><?php echo esc_html(number_format($right['votes'])); ?> glasova</span>
+                    </div>
+
+                    <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">
+                        <span class="yuv-vote-icon">⚡</span>
+                        <span class="yuv-vote-text">GLASAJ</span>
+                    </button>
                 </div>
             <?php endif; ?>
 
         </div>
 
-        <!-- Matches Strip (Footer) -->
-        <div class="yuv-matches-strip">
+        <!-- Navigation Strip (Footer with Links) -->
+        <div class="yuv-nav-strip">
             <?php foreach ($all_matches as $strip_match_id): 
                 $is_current = ($strip_match_id == $match_id);
                 $strip_items = get_post_meta($strip_match_id, '_voting_items', true) ?: [];
@@ -520,19 +540,22 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
                 if (!empty($strip_items[1])) {
                     $img2 = get_post_meta($strip_items[1], '_custom_image_url', true) ?: get_the_post_thumbnail_url($strip_items[1], 'thumbnail');
                 }
+                
+                // Build URL with match_id param
+                $match_url = add_query_arg('match_id', $strip_match_id, get_permalink());
             ?>
-                <div class="yuv-strip-card <?php echo esc_attr($strip_class); ?>">
+                <a href="<?php echo esc_url($match_url); ?>" class="yuv-nav-item <?php echo esc_attr($strip_class); ?>">
                     <?php if ($img1): ?>
-                        <img src="<?php echo esc_url($img1); ?>" alt="" class="yuv-strip-img left">
+                        <img src="<?php echo esc_url($img1); ?>" alt="" class="yuv-nav-img left">
                     <?php endif; ?>
-                    <span class="yuv-strip-vs">vs</span>
+                    <span class="yuv-nav-vs">vs</span>
                     <?php if ($img2): ?>
-                        <img src="<?php echo esc_url($img2); ?>" alt="" class="yuv-strip-img right">
+                        <img src="<?php echo esc_url($img2); ?>" alt="" class="yuv-nav-img right">
                     <?php endif; ?>
                     <?php if ($strip_voted): ?>
-                        <span class="yuv-check">✓</span>
+                        <span class="yuv-nav-check">✓</span>
                     <?php endif; ?>
-                </div>
+                </a>
             <?php endforeach; ?>
         </div>
 
@@ -542,10 +565,7 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
     return ob_get_clean();
 }
 
-/**
- * No duel message
- */
-function yuv_no_duel_message() {
+/**render_no_duel() {
     return '<div class="yuv-no-duel">
         <div class="yuv-no-duel-icon">⚔️</div>
         <h3>Trenutno nema aktivnih duela</h3>
@@ -554,6 +574,9 @@ function yuv_no_duel_message() {
 }
 
 /**
+ * Stage complete message
+ */
+function yuv_render_stage_complet
  * Stage complete message
  */
 function yuv_stage_complete_message() {

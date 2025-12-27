@@ -193,6 +193,32 @@ function yuv_cast_tournament_vote_ajax() {
         wp_send_json_error(['message' => 'Greška pri beleženju glasa']);
     }
     
+    // Get updated vote counts and percentages for UI update
+    $match_items = get_post_meta($match_id, '_voting_items', true);
+    $results = [];
+    $total_votes = 0;
+    
+    // First pass: get vote counts
+    foreach ($match_items as $item_id_check) {
+        $vote_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT SUM(vote_value) FROM {$votes_table} 
+            WHERE voting_list_id = %d AND voting_item_id = %d",
+            $match_id,
+            $item_id_check
+        ));
+        
+        $results[$item_id_check] = [
+            'id' => $item_id_check,
+            'votes' => (int) $vote_count,
+        ];
+        $total_votes += (int) $vote_count;
+    }
+    
+    // Second pass: calculate percentages
+    foreach ($results as &$result) {
+        $result['percent'] = $total_votes > 0 ? round(($result['votes'] / $total_votes) * 100) : 50;
+    }
+    
     // Get tournament and stage info
     $tournament_id = get_post_meta($match_id, '_yuv_tournament_id', true);
     $stage = get_post_meta($match_id, '_yuv_stage', true);
@@ -206,6 +232,7 @@ function yuv_cast_tournament_vote_ajax() {
     $response_data = [
         'message' => 'Glas uspešno zabeležen!',
         'vote_id' => $wpdb->insert_id,
+        'results' => array_values($results), // Convert to indexed array for JS
         'next_match' => $next_match_data,
         'progress' => $progress,
     ];

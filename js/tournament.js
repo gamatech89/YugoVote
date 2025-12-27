@@ -1,10 +1,10 @@
 /**
- * Tournament Duel Arena JavaScript
- * Countdown timer, voting, and interactive features
+ * Tournament Arena JavaScript - Random Access + Auto-Advance
+ * Vote handler with auto-reload navigation
  */
 
 jQuery(document).ready(function ($) {
-  const arena = $(".yuv-duel-arena");
+  const arena = $(".yuv-arena-wrapper");
   if (!arena.length) return;
 
   const endTime = parseInt(arena.data("end-time"));
@@ -43,7 +43,7 @@ jQuery(document).ready(function ($) {
   }
 
   // ========================================================================
-  // VOTE BUTTON HANDLER
+  // VOTE BUTTON HANDLER - NEW SIMPLIFIED FLOW
   // ========================================================================
 
   $(".yuv-vote-btn").on("click", function (e) {
@@ -51,6 +51,7 @@ jQuery(document).ready(function ($) {
 
     const btn = $(this);
     const itemId = btn.data("item-id");
+    const contender = btn.closest(".yuv-contender");
 
     // Disable all vote buttons
     $(".yuv-vote-btn").prop("disabled", true);
@@ -70,17 +71,37 @@ jQuery(document).ready(function ($) {
       },
       success: function (response) {
         if (response.success) {
+          // Add results state class
+          arena.addClass("yuv-show-results");
+          
+          // Mark winner
+          contender.addClass("is-winner");
+          
+          // Update percentages and vote counts from response
+          if (response.data.results) {
+            const results = response.data.results;
+            
+            $(".yuv-contender").each(function() {
+              const $cont = $(this);
+              const contId = $cont.data("contender-id");
+              const result = results.find(r => r.id == contId);
+              
+              if (result) {
+                $cont.find(".yuv-percent").text(result.percent + "%");
+                $cont.find(".yuv-vote-count").text(result.votes.toLocaleString() + " glasova");
+                $cont.find(".yuv-result-bar").css("width", result.percent + "%");
+              }
+            });
+          }
+          
           // Show success toast
           showToast("Tvoj glas je zabeležen!");
-
-          // Redirect to next match if available, otherwise reload to show results
-          setTimeout(function () {
-            if (response.data.next_match_url) {
-              window.location.href = response.data.next_match_url;
-            } else {
-              location.reload();
-            }
-          }, 1500);
+          
+          // Wait 2 seconds, then reload without params (auto-advance)
+          setTimeout(function() {
+            window.location.href = window.location.pathname;
+          }, 2000);
+          
         } else {
           alert(
             response.data.message || "Greška pri glasanju. Pokušaj ponovo."
@@ -107,15 +128,28 @@ jQuery(document).ready(function ($) {
 
   function showToast(message) {
     const toast = $("#yuv-vote-toast");
-    toast.find(".yuv-toast-message").text(message);
-    toast.show();
+    if (toast.length) {
+      toast.find(".yuv-toast-message").text(message);
+      toast.show();
 
-    setTimeout(function () {
-      toast.addClass("hiding");
       setTimeout(function () {
-        toast.hide().removeClass("hiding");
-      }, 400);
-    }, 3000);
+        toast.addClass("hiding");
+        setTimeout(function () {
+          toast.hide().removeClass("hiding");
+        }, 400);
+      }, 3000);
+    }
+  }
+
+  // ========================================================================
+  // AUTO-SCROLL TO CURRENT MATCH IN NAV STRIP
+  // ========================================================================
+  
+  const currentNavItem = $(".yuv-nav-item.current");
+  if (currentNavItem.length) {
+    const navStrip = $(".yuv-nav-strip");
+    const scrollLeft = currentNavItem.offset().left - navStrip.offset().left - (navStrip.width() / 2) + (currentNavItem.width() / 2);
+    navStrip.scrollLeft(navStrip.scrollLeft() + scrollLeft);
   }
 
   // ========================================================================
@@ -126,29 +160,14 @@ jQuery(document).ready(function ($) {
     setTimeout(function () {
       $(".yuv-result-bar").each(function () {
         const bar = $(this);
-        const fill = bar.find(".yuv-bar-fill");
-        const targetHeight = fill.css("height");
+        const targetWidth = bar.css("width");
 
-        // Start from 0 and animate to target height
-        fill.css("height", "0");
+        // Start from 0 and animate to target width
+        bar.css("width", "0");
         setTimeout(function () {
-          fill.css("height", targetHeight);
+          bar.css("width", targetWidth);
         }, 100);
       });
-    }, 500);
+    }, 300);
   }
-
-  // ========================================================================
-  // CONTENDER HOVER EFFECTS
-  // ========================================================================
-
-  $(".yuv-contender:not(.voted)")
-    .on("mouseenter", function () {
-      $(this).find(".yuv-contender-img").css("filter", "brightness(1.2)");
-    })
-    .on("mouseleave", function () {
-      $(this).find(".yuv-contender-img").css("filter", "brightness(1)");
-    });
-
-  // Timeline section removed for better UX
 });
