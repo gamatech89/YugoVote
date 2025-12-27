@@ -86,14 +86,8 @@ add_shortcode('yuv_auto_bracket', 'yuv_auto_bracket_shortcode');
 /**
  * Active Tournament Shortcode (for home page)
  * Displays the currently active tournament
- * Safe for use in Elementor - doesn't rely on global $post
  */
 function yuv_active_tournament_shortcode($atts) {
-    // Don't execute in Elementor editor mode
-    if (defined('ELEMENTOR_VERSION') && \Elementor\Plugin::$instance->editor->is_edit_mode()) {
-        return '<div style="padding: 20px; background: #e7f3ff; border: 2px dashed #2271b1; border-radius: 8px; text-align: center;"><p><strong>🏆 Turnir Widget</strong></p><p>Aktivni turnir će biti prikazan ovde na front-end-u.</p></div>';
-    }
-    
     // Save and clear global post to avoid conflicts
     global $post;
     $original_post = $post;
@@ -309,7 +303,7 @@ function yuv_tournament_archive_shortcode($atts) {
                         <h3 class="yuv-tournament-card-title"><?php the_title(); ?></h3>
                         <?php if ($start_date): ?>
                             <div class="yuv-tournament-card-date">
-                                📅 <?php echo date('d.m.Y', $start_date); ?>
+                                📅 <?php echo date('d.m.Y', strtotime($start_date)); ?>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -441,7 +435,7 @@ function yuv_render_match_card($list_id) {
                     <span class="yuv-tie-icon" title="Pobednik određen izvlačenjem">🎲</span>
                 <?php endif; ?>
             <?php elseif ($post->post_status === 'publish'): ?>
-                🔴 U toku - Završava: <?php echo date('d.m.Y H:i', $end_time); ?>
+                🔴 U toku - Završava: <?php echo $end_time ? date('d.m.Y H:i', intval($end_time)) : 'N/A'; ?>
             <?php else: ?>
                 ⏳ Čeka pobednike
             <?php endif; ?>
