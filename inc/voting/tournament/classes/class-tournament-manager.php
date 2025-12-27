@@ -15,10 +15,7 @@ class YUV_Tournament_Manager {
         $contestants = get_post_meta($tournament_id, '_yuv_contestants', true);
         $start_date = get_post_meta($tournament_id, '_yuv_start_date', true);
         $tournament_size = (int) get_post_meta($tournament_id, '_yuv_tournament_size', true) ?: 16;
-        $of_duration = (int) get_post_meta($tournament_id, '_yuv_round_duration_of', true) ?: 24;
-        $qf_duration = (int) get_post_meta($tournament_id, '_yuv_round_duration_qf', true) ?: 24;
-        $sf_duration = (int) get_post_meta($tournament_id, '_yuv_round_duration_sf', true) ?: 24;
-        $final_duration = (int) get_post_meta($tournament_id, '_yuv_round_duration_final', true) ?: 24;
+        $round_interval = (int) get_post_meta($tournament_id, '_yuv_round_interval', true) ?: 24;
 
         if (!is_array($contestants) || count($contestants) !== $tournament_size) {
             return ['success' => false, 'message' => "Potrebno je tačno {$tournament_size} takmičara"];
@@ -37,9 +34,9 @@ class YUV_Tournament_Manager {
         // Calculate start timestamp
         $start_timestamp = strtotime($start_date);
 
-        $day_offset = 0;
+        $round_offset = 0;
 
-        // For 16-player tournaments, create 8 Octofinal matches (ALL on Day 1)
+        // For 16-player tournaments, create 8 Octofinal matches (ALL at start)
         if ($tournament_size === 16) {
             $of_start = $start_timestamp;
             
@@ -52,7 +49,7 @@ class YUV_Tournament_Manager {
                     "$tournament_title - Osmina finala $match_num",
                     [$contestant1, $contestant2],
                     $of_start,
-                    $of_duration,
+                    $round_interval,
                     $tournament_id,
                     'of',
                     $match_num
@@ -60,11 +57,11 @@ class YUV_Tournament_Manager {
 
                 $lists['of'][] = $list_id;
             }
-            $day_offset = 1; // Next stage starts on Day 2
+            $round_offset = 1; // Next round after 1 interval
         }
 
         // Create 4 Quarterfinal matches (simultaneous)
-        $qf_start = $start_timestamp + ($day_offset * 86400);
+        $qf_start = $start_timestamp + ($round_offset * $round_interval * 3600);
         
         for ($i = 0; $i < 4; $i++) {
             $match_num = $i + 1;
@@ -78,7 +75,7 @@ class YUV_Tournament_Manager {
                 "$tournament_title - Četvrtfinale $match_num",
                 $qf_contestants,
                 $qf_start,
-                $qf_duration,
+                $round_interval,
                 $tournament_id,
                 'qf',
                 $match_num,
@@ -97,8 +94,8 @@ class YUV_Tournament_Manager {
         }
 
         // Create 2 Semifinal matches (simultaneous)
-        $day_offset++;
-        $sf_start = $start_timestamp + ($day_offset * 86400);
+        $round_offset++;
+        $sf_start = $start_timestamp + ($round_offset * $round_interval * 3600);
 
         for ($i = 0; $i < 2; $i++) {
             $match_num = $i + 1;
@@ -107,7 +104,7 @@ class YUV_Tournament_Manager {
                 "$tournament_title - Polufinale $match_num",
                 [],
                 $sf_start,
-                $sf_duration,
+                $round_interval,
                 $tournament_id,
                 'sf',
                 $match_num,
@@ -124,14 +121,14 @@ class YUV_Tournament_Manager {
         }
 
         // Create Final match
-        $day_offset++;
-        $final_start = $start_timestamp + ($day_offset * 86400);
+        $round_offset++;
+        $final_start = $start_timestamp + ($round_offset * $round_interval * 3600);
 
         $final_id = $this->create_match(
             "$tournament_title - FINALE",
             [],
             $final_start,
-            $final_duration,
+            $round_interval,
             $tournament_id,
             'final',
             1,
