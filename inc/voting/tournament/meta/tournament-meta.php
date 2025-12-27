@@ -834,7 +834,7 @@ function yuv_save_tournament_meta($post_id) {
         
         if ($filled_count === $tournament_size && !empty($start_date)) {
             require_once get_stylesheet_directory() . '/inc/voting/tournament/classes/class-tournament-manager.php';
-            $manager = new Tournament_Manager();
+            $manager = new YUV_Tournament_Manager();
             $result = $manager->create_bracket($post_id);
             
             if ($result['success']) {
