@@ -235,10 +235,341 @@ function yuv_render_tournament_bracket($tournament_id, $bracket_lists) {
 }
 
 /**
- * Active Duel Shortcode - Hero Battle Arena
+ * Active Duel Shortcode - Auto-Swipe to First Unvoted Match
  * Usage: [yuv_active_duel]
  */
 function yuv_active_duel_shortcode($atts) {
+    global $wpdb;
+    
+    $current_time = current_time('timestamp');
+    $user_id = get_current_user_id();
+    $user_ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    
+    // Step 1: Find active tournament
+    $active_tournament = $wpdb->get_var(
+        "SELECT ID FROM {$wpdb->posts} 
+        WHERE post_type = 'yuv_tournament' 
+        AND post_status = 'publish' 
+        ORDER BY post_date DESC 
+        LIMIT 1"
+    );
+    
+    if (!$active_tournament) {
+        return yuv_no_duel_message();
+    }
+    
+    $tournament_id = $active_tournament;
+    $tournament_title = get_the_title($tournament_id);
+    $bracket_lists = get_post_meta($tournament_id, '_yuv_bracket_lists', true);
+    
+    if (empty($bracket_lists)) {
+        return yuv_no_duel_message();
+    }
+    
+    // Step 2: Get ALL active matches for this tournament
+    $all_match_ids = [];
+    foreach ($bracket_lists as $stage => $match_ids) {
+        $all_match_ids = array_merge($all_match_ids, $match_ids);
+    }
+    
+    if (empty($all_match_ids)) {
+        return yuv_no_duel_message();
+    }
+    
+    // Step 3: Filter to only PUBLISHED matches that haven't ended
+    $active_matches = [];
+    foreach ($all_match_ids as $match_id) {
+        $post_status = get_post_status($match_id);
+        $end_time = (int) get_post_meta($match_id, '_yuv_end_time', true);
+        $completed = get_post_meta($match_id, '_yuv_match_completed', true);
+        
+        if ($post_status === 'publish' && $end_time > $current_time && !$completed) {
+            $active_matches[] = $match_id;
+        }
+    }
+    
+    if (empty($active_matches)) {
+        return yuv_stage_complete_message();
+    }
+    
+    // Step 4: Find FIRST match where user hasn't voted
+    $first_unvoted_match = null;
+    
+    foreach ($active_matches as $match_id) {
+        // Check if user voted in this match
+        if ($user_id > 0) {
+            $user_vote = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}voting_list_votes 
+                WHERE voting_list_id = %d AND user_id = %d",
+                $match_id,
+                $user_id
+            ));
+        } else {
+            $user_vote = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}voting_list_votes 
+                WHERE voting_list_id = %d AND user_id = 0 AND ip_address = %s",
+                $match_id,
+                $user_ip
+            ));
+        }
+        
+        if (!$user_vote) {
+            $first_unvoted_match = $match_id;
+            break; // Found it!
+        }
+    }
+    
+    // If all matches voted, show the first one with results
+    if (!$first_unvoted_match) {
+        $first_unvoted_match = $active_matches[0];
+    }
+    
+    // Step 5: Render the selected match
+    return yuv_render_duel_arena($first_unvoted_match, $tournament_id, $tournament_title, $active_matches, $user_id, $user_ip);
+}
+
+/**
+ * Render duel arena for a specific match
+ */
+function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $all_matches, $user_id, $user_ip) {
+    global $wpdb;
+    
+    $stage = get_post_meta($match_id, '_yuv_stage', true);
+    $match_number = get_post_meta($match_id, '_yuv_match_number', true);
+    $end_time = (int) get_post_meta($match_id, '_yuv_end_time', true);
+    $items = get_post_meta($match_id, '_voting_items', true) ?: [];
+    
+    // Check if user voted
+    $has_voted = false;
+    if ($user_id > 0) {
+        $user_vote = $wpdb->get_var($wpdb->prepare(
+            "SELECT voting_item_id FROM {$wpdb->prefix}voting_list_votes 
+            WHERE voting_list_id = %d AND user_id = %d",
+            $match_id,
+            $user_id
+        ));
+    } else {
+        $user_vote = $wpdb->get_var($wpdb->prepare(
+            "SELECT voting_item_id FROM {$wpdb->prefix}voting_list_votes 
+            WHERE voting_list_id = %d AND user_id = 0 AND ip_address = %s",
+            $match_id,
+            $user_ip
+        ));
+    }
+    $has_voted = !empty($user_vote);
+    
+    // Get contenders
+    $contenders = [];
+    foreach ($items as $item_id) {
+        $item = get_post($item_id);
+        if (!$item) continue;
+
+        $votes_table = $wpdb->prefix . 'voting_list_votes';
+        $vote_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT SUM(vote_value) FROM {$votes_table} 
+            WHERE voting_list_id = %d AND voting_item_id = %d",
+            $match_id,
+            $item_id
+        ));
+
+        $image = get_post_meta($item_id, '_custom_image_url', true);
+        if (!$image) {
+            $image = get_the_post_thumbnail_url($item_id, 'large');
+        }
+
+        $contenders[] = [
+            'id' => $item_id,
+            'name' => $item->post_title,
+            'bio' => get_post_meta($item_id, '_short_description', true) ?: wp_trim_words($item->post_content, 20),
+            'image' => $image,
+            'votes' => (int) $vote_count,
+        ];
+    }
+
+    // Calculate percentages
+    $total_votes = array_sum(array_column($contenders, 'votes'));
+    foreach ($contenders as &$c) {
+        $c['percent'] = $total_votes > 0 ? round(($c['votes'] / $total_votes) * 100) : 50;
+    }
+
+    // Stage labels
+    $stage_labels = [
+        'r16' => 'OSMINA FINALA',
+        'qf' => 'ČETVRTFINALE',
+        'sf' => 'POLUFINALE',
+        'final' => 'FINALE'
+    ];
+    $stage_label = $stage_labels[$stage] ?? 'DUEL';
+
+    ob_start();
+    ?>
+    
+    <div class="yuv-duel-arena" 
+         data-tournament-id="<?php echo esc_attr($tournament_id); ?>"
+         data-match-id="<?php echo esc_attr($match_id); ?>"
+         data-stage="<?php echo esc_attr($stage); ?>"
+         data-user-voted="<?php echo $has_voted ? 'true' : 'false'; ?>"
+         data-end-time="<?php echo esc_attr($end_time); ?>">
+        
+        <!-- Arena Header (Minimal) -->
+        <div class="yuv-arena-header">
+            <h2 class="yuv-match-title">
+                <?php echo esc_html($stage_label . ' ' . $match_number); ?>
+            </h2>
+        </div>
+
+        <!-- Battle Arena (Split Screen) -->
+        <div class="yuv-battle-arena">
+            
+            <!-- Left Contender -->
+            <?php if (!empty($contenders[0])): $left = $contenders[0]; ?>
+                <div class="yuv-contender yuv-left <?php echo $has_voted ? 'voted' : ''; ?>" 
+                     data-contender-id="<?php echo esc_attr($left['id']); ?>">
+                    
+                    <div class="yuv-contender-img" style="background-image: url('<?php echo esc_url($left['image']); ?>');">
+                        <div class="yuv-img-overlay"></div>
+                    </div>
+
+                    <div class="yuv-contender-info">
+                        <h2 class="yuv-contender-name"><?php echo esc_html($left['name']); ?></h2>
+                        <?php if ($left['bio']): ?>
+                            <p class="yuv-contender-bio"><?php echo esc_html($left['bio']); ?></p>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($has_voted): ?>
+                        <div class="yuv-result-overlay">
+                            <span class="yuv-percent"><?php echo esc_html($left['percent']); ?>%</span>
+                        </div>
+                    <?php else: ?>
+                        <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
+                            <span class="yuv-vote-icon">⚡</span>
+                            <span class="yuv-vote-text">GLASAJ</span>
+                        </button>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- VS Badge -->
+            <div class="yuv-vs-badge">
+                <span>VS</span>
+            </div>
+
+            <!-- Right Contender -->
+            <?php if (!empty($contenders[1])): $right = $contenders[1]; ?>
+                <div class="yuv-contender yuv-right <?php echo $has_voted ? 'voted' : ''; ?>" 
+                     data-contender-id="<?php echo esc_attr($right['id']); ?>">
+                    
+                    <div class="yuv-contender-img" style="background-image: url('<?php echo esc_url($right['image']); ?>');">
+                        <div class="yuv-img-overlay"></div>
+                    </div>
+
+                    <div class="yuv-contender-info">
+                        <h2 class="yuv-contender-name"><?php echo esc_html($right['name']); ?></h2>
+                        <?php if ($right['bio']): ?>
+                            <p class="yuv-contender-bio"><?php echo esc_html($right['bio']); ?></p>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($has_voted): ?>
+                        <div class="yuv-result-overlay">
+                            <span class="yuv-percent"><?php echo esc_html($right['percent']); ?>%</span>
+                        </div>
+                    <?php else: ?>
+                        <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">
+                            <span class="yuv-vote-icon">⚡</span>
+                            <span class="yuv-vote-text">GLASAJ</span>
+                        </button>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+        </div>
+
+        <!-- Matches Strip (Footer) -->
+        <div class="yuv-matches-strip">
+            <?php foreach ($all_matches as $strip_match_id): 
+                $is_current = ($strip_match_id == $match_id);
+                $strip_items = get_post_meta($strip_match_id, '_voting_items', true) ?: [];
+                
+                // Check if voted
+                if ($user_id > 0) {
+                    $strip_voted = $wpdb->get_var($wpdb->prepare(
+                        "SELECT id FROM {$wpdb->prefix}voting_list_votes 
+                        WHERE voting_list_id = %d AND user_id = %d",
+                        $strip_match_id,
+                        $user_id
+                    ));
+                } else {
+                    $strip_voted = $wpdb->get_var($wpdb->prepare(
+                        "SELECT id FROM {$wpdb->prefix}voting_list_votes 
+                        WHERE voting_list_id = %d AND user_id = 0 AND ip_address = %s",
+                        $strip_match_id,
+                        $user_ip
+                    ));
+                }
+                
+                $strip_class = $is_current ? 'current' : ($strip_voted ? 'voted' : '');
+                
+                // Get first two images
+                $img1 = '';
+                $img2 = '';
+                if (!empty($strip_items[0])) {
+                    $img1 = get_post_meta($strip_items[0], '_custom_image_url', true) ?: get_the_post_thumbnail_url($strip_items[0], 'thumbnail');
+                }
+                if (!empty($strip_items[1])) {
+                    $img2 = get_post_meta($strip_items[1], '_custom_image_url', true) ?: get_the_post_thumbnail_url($strip_items[1], 'thumbnail');
+                }
+            ?>
+                <div class="yuv-strip-card <?php echo esc_attr($strip_class); ?>">
+                    <?php if ($img1): ?>
+                        <img src="<?php echo esc_url($img1); ?>" alt="" class="yuv-strip-img left">
+                    <?php endif; ?>
+                    <span class="yuv-strip-vs">vs</span>
+                    <?php if ($img2): ?>
+                        <img src="<?php echo esc_url($img2); ?>" alt="" class="yuv-strip-img right">
+                    <?php endif; ?>
+                    <?php if ($strip_voted): ?>
+                        <span class="yuv-check">✓</span>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+    </div>
+
+    <?php
+    return ob_get_clean();
+}
+
+/**
+ * No duel message
+ */
+function yuv_no_duel_message() {
+    return '<div class="yuv-no-duel">
+        <div class="yuv-no-duel-icon">⚔️</div>
+        <h3>Trenutno nema aktivnih duela</h3>
+        <p>Pratite nas za najave novih turnira!</p>
+    </div>';
+}
+
+/**
+ * Stage complete message
+ */
+function yuv_stage_complete_message() {
+    return '<div class="yuv-stage-complete">
+        <div class="yuv-complete-icon">🏆</div>
+        <h2>Završili ste sve trenutne duelove!</h2>
+        <p>Vratite se kasnije za sledeću rundu.</p>
+        <a href="' . home_url() . '" class="yuv-btn-primary">Nazad na početnu</a>
+    </div>';
+}
+
+/**
+ * Active Duel Shortcode - Hero Battle Arena (DEPRECATED - keeping for compatibility)
+ * Usage: [yuv_active_duel_old]
+ */
+function yuv_active_duel_old_shortcode($atts) {
     global $wpdb;
     
     // Find currently active match

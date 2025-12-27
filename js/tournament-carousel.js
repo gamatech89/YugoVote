@@ -97,13 +97,6 @@ jQuery(document).ready(function ($) {
       },
       success: function (response) {
         if (response.success) {
-          // Update progress from server response
-          if (response.data.progress) {
-            votedMatches = response.data.progress.voted;
-            totalMatches = response.data.progress.total;
-            updateProgressBar();
-          }
-
           // Animate winner (scale up) and loser (fade out)
           const $winner = contender;
           const $loser = contender.siblings(".yuv-contender");
@@ -111,16 +104,10 @@ jQuery(document).ready(function ($) {
           $winner.addClass("yuv-winner-animation");
           $loser.addClass("yuv-loser-animation");
 
+          // Auto-reload after animation to show next unvoted match (swipe effect)
           setTimeout(function () {
-            // Check if there's a next match
-            if (response.data.next_match) {
-              // Load next match data
-              loadNextMatch(response.data.next_match);
-            } else {
-              // All matches completed - show completion message
-              showStageComplete();
-            }
-          }, 1200);
+            location.reload();
+          }, 1500);
         } else {
           alert(response.data.message || "Greška pri glasanju.");
           $(".yuv-vote-btn").prop("disabled", false);
