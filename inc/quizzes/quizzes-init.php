@@ -23,6 +23,7 @@ require_once $quizzes_inc_path . 'cpts/taxonomy-quiz-category.php';
 require_once $quizzes_inc_path . 'meta/quiz-meta.php';
 require_once $quizzes_inc_path . 'meta/quiz-level-meta.php';
 require_once $quizzes_inc_path . 'meta/question-meta.php';
+require_once $quizzes_inc_path . 'meta/quiz-category-meta.php';
 
 // --- Services ---
 require_once $quizzes_inc_path . 'services/class-ygv-token-service.php';

@@ -1,83 +1,172 @@
 async function api(url, opts = {}) {
   const res = await fetch(url, {
-    method: opts.method || 'GET',
+    method: opts.method || "GET",
     headers: {
-      'Content-Type': 'application/json',
-      'X-WP-Nonce': quizSettings.nonce
+      "Content-Type": "application/json",
+      "X-WP-Nonce": quizSettings.nonce,
     },
-    credentials: 'same-origin',
-    body: opts.body ? JSON.stringify(opts.body) : undefined
+    credentials: "same-origin",
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
   let data = {};
-  try { data = await res.json(); } catch(e) {}
-  if (!res.ok) throw new Error(data && (data.message || data.code) || 'Greška.');
+  try {
+    data = await res.json();
+  } catch (e) {}
+  if (!res.ok)
+    throw new Error((data && (data.message || data.code)) || "Greška.");
   return data;
 }
 
 const Templates = {
-  introScreen: (title, description, imageUrl) => `
-    <div class="fade-in cs-intro-container">
-      ${imageUrl ? `<img src="${imageUrl}" alt="${title}" class="quiz-image">` : ''}
-      <h2>${title}</h2>
-      <p>${description}</p>
-      <button id="start-btn" class="cs-main-button">
-        Zapocni Kviz
-        <svg xmlns="http://www.w3.org/2000/svg" width="27" height="20" viewBox="0 0 27 20" fill="none">
-          <path d="M1.5 9.81774C6.04008 10.4649 16.322 11.371 21.1292 9.81774C27.1381 7.87618 19.1262 6.48935 
-          14.7196 2.8836C10.3131 -0.72216 27.3384 7.7375 25.3354 9.81774C23.3324 11.898 19.1262 16.3358 
-          16.9229 18" stroke="#4457A5" stroke-width="3" stroke-linecap="round"></path>
-        </svg>
-      </button>
+  introScreen: (quiz) => `
+    <div class="ygv-quiz-card fade-in">
+      ${
+        quiz.featured_image
+          ? `
+        <div class="ygv-quiz-header" style="background-image: url('${quiz.featured_image}');">
+          <span class="ygv-quiz-badge" style="background-color: var(--quiz-primary-color);">
+            ${quiz.category_name}
+          </span>
+        </div>
+      `
+          : ""
+      }
+      
+      <div class="ygv-quiz-body">
+        <h2 class="ygv-quiz-title">${quiz.title}</h2>
+        <p class="ygv-quiz-description">${quiz.description}</p>
+        
+        <div class="ygv-quiz-meta">
+          <div class="ygv-quiz-meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>${quiz.num_questions} pitanja</span>
+          </div>
+          <div class="ygv-quiz-meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>${quiz.time_per_question}s po pitanju</span>
+          </div>
+          ${
+            quiz.quiz_difficulty
+              ? `
+            <div class="ygv-quiz-meta-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span>${quiz.quiz_difficulty}</span>
+            </div>
+          `
+              : ""
+          }
+        </div>
+        
+        <button id="start-btn" class="ygv-btn-primary" style="background-color: var(--quiz-primary-color);">
+          Započni Kviz
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </div>
     </div>
   `,
 
-  questionScreen: (question, step, total, timeLeft) => `
-    <div class="fade-in scale-in cs-quiz-step">
-      <div class="cs-timer-container">
-        <svg class="cs-progress-ring" width="120" height="120">
-          <circle class="cs-progress-ring-circle" cx="60" cy="60" r="55"></circle>
-          <circle class="cs-progress-ring-fill"   cx="60" cy="60" r="55"></circle>
-        </svg>
-        <span class="cs-timer-text" id="timer">${timeLeft}</span>
+  questionScreen: (question, current, total, timeLeft) => `
+    <div class="ygv-quiz-question fade-in">
+      <div class="ygv-quiz-progress">
+        <div class="ygv-quiz-progress-bar" style="width: ${
+          (current / total) * 100
+        }%; background-color: var(--quiz-primary-color);"></div>
       </div>
-      <p class="cs-question-title">${question.title}</p>
-      <div id="answers" class="cs-answers-container"></div>
+      
+      <div class="ygv-quiz-timer">
+        <svg class="ygv-timer-ring" width="80" height="80">
+          <circle class="ygv-timer-ring-bg" cx="40" cy="40" r="36"></circle>
+          <circle class="ygv-timer-ring-progress" cx="40" cy="40" r="36" style="stroke: var(--quiz-primary-color);"></circle>
+        </svg>
+        <span class="ygv-timer-text" id="timer">${timeLeft}</span>
+      </div>
+      
+      <p class="ygv-question-counter">Pitanje ${current} od ${total}</p>
+      <h3 class="ygv-question-title">${question.title}</h3>
+      
+      <div id="answers" class="ygv-answers-grid"></div>
     </div>
   `,
 
-  nextQuestionScreen: (step, total, timeLeft = 3) => `
-    <div class="fade-in scale-in cs-wait-screen">
-      <h3>Pripremite se za sledece pitanje!</h3>
-      <p>Pitanje ${step} krece za:</p>
-      <div class="cs-timer-container">
-        <svg class="cs-progress-ring" width="120" height="120">
-          <circle class="cs-progress-ring-circle" cx="60" cy="60" r="55"></circle>
-          <circle class="cs-progress-ring-fill cs-purple" cx="60" cy="60" r="55"></circle>
+  waitScreen: (step, total, timeLeft = 3) => `
+    <div class="ygv-wait-screen fade-in">
+      <h3>Sledeće pitanje</h3>
+      <div class="ygv-countdown-circle">
+        <svg width="120" height="120">
+          <circle class="ygv-countdown-bg" cx="60" cy="60" r="54"></circle>
+          <circle class="ygv-countdown-progress" cx="60" cy="60" r="54" style="stroke: var(--quiz-primary-color);"></circle>
         </svg>
-        <span class="cs-timer-text" id="countdownTimer">${timeLeft}</span>
+        <span class="ygv-countdown-text" id="countdownTimer">${timeLeft}</span>
       </div>
+      <p>Pitanje ${step} od ${total}</p>
     </div>
   `,
 
   summaryScreen: (score, total) => `
-    <div class="fade-in cs-end-screen">
-      <h2>Kviz je Zavrsen!</h2>
-      <p>Vas Skor Je: <strong>${score} / ${total}</strong></p>
-      <button class="cs-main-button" onclick="window.location.reload()">Pokusaj opet</button>
+    <div class="ygv-quiz-summary fade-in">
+      <div class="ygv-summary-icon">
+        ${score >= total * 0.7 ? "🎉" : score >= total * 0.4 ? "👍" : "💪"}
+      </div>
+      <h2>${
+        score >= total * 0.7
+          ? "Odličan rezultat!"
+          : score >= total * 0.4
+          ? "Dobar pokušaj!"
+          : "Probaj ponovo!"
+      }</h2>
+      <div class="ygv-summary-score">
+        <span class="ygv-score-number">${score}</span>
+        <span class="ygv-score-divider">/</span>
+        <span class="ygv-score-total">${total}</span>
+      </div>
+      <p class="ygv-summary-percent">${Math.round(
+        (score / total) * 100
+      )}% tačnih odgovora</p>
+      <button class="ygv-btn-primary" onclick="window.location.reload()" style="background-color: var(--quiz-primary-color);">
+        Pokušaj ponovo
+      </button>
+    </div>
+  `,
+
+  loginPrompt: () => `
+    <div class="ygv-login-prompt fade-in">
+      <div class="ygv-login-icon">🔒</div>
+      <h2>Prijava Potrebna</h2>
+      <p>Da biste igrali ovaj kviz, morate biti prijavljeni.</p>
+      <button class="ygv-btn-primary" onclick="window.location.href='/login'" style="background-color: var(--quiz-primary-color);">
+        Prijavi se
+      </button>
+      <button class="ygv-btn-secondary" onclick="window.location.reload()">
+        Nazad
+      </button>
     </div>
   `,
 };
 
 class Quiz {
   constructor(apiUrl, quizId) {
-    this.apiUrl = apiUrl;     
+    this.apiUrl = apiUrl;
     this.quizId = quizId;
     this.quizData = null;
     this.currentStep = 0;
     this.userAnswers = [];
     this.score = 0;
     this.timePerQuestion = 10;
-    this.attemptId = null;    
+    this.attemptId = null;
+    this.categoryColor = "#6A0DAD";
+    this.allowGuestPlay = false;
+    this.isGuest = false;
 
     this.setupQuizContainer();
     this.controller = new QuizController(this);
@@ -85,25 +174,46 @@ class Quiz {
   }
 
   async startAttempt() {
-    const r = await api(`${this.apiUrl}/quiz/${this.quizId}/start`, { method: 'POST' });
-    this.attemptId = r.attempt_id;
-    // notify account panel to refresh tokens (optional)
-    window.dispatchEvent(new CustomEvent('ygv:state:changed'));
+    try {
+      const r = await api(`${this.apiUrl}/quiz/${this.quizId}/start`, {
+        method: "POST",
+      });
+      this.attemptId = r.attempt_id;
+      this.isGuest = r.is_guest || false;
+      window.dispatchEvent(new CustomEvent("ygv:state:changed"));
+      return r;
+    } catch (error) {
+      if (error.message && error.message.includes("prijavljeni")) {
+        this.controller.showLoginPrompt();
+        throw error;
+      }
+      throw error;
+    }
   }
 
   async submitAttempt() {
     if (!this.attemptId) return;
-    const body = { attempt_id: this.attemptId, correct: this.score, total: this.quizData.length };
-    await api(`${this.apiUrl}/quiz/${this.quizId}/submit`, { method: 'POST', body });
-    // refresh account panel (levels/tokens may change)
-    window.dispatchEvent(new CustomEvent('ygv:state:changed'));
+    const body = {
+      attempt_id: this.attemptId,
+      correct: this.score,
+      total: this.quizData.length,
+    };
+    const r = await api(`${this.apiUrl}/quiz/${this.quizId}/submit`, {
+      method: "POST",
+      body,
+    });
+    if (r.is_guest) {
+      console.log("Guest result:", r.message);
+    }
+    window.dispatchEvent(new CustomEvent("ygv:state:changed"));
+    return r;
   }
 
-    setupQuizContainer() {
-        if (!document.querySelector(".cs-quiz-wrapper")) {
-            document.body.insertAdjacentHTML(
-                "beforeend",
-                `<div class="cs-quiz">
+  setupQuizContainer() {
+    if (!document.querySelector(".cs-quiz-wrapper")) {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<div class="cs-quiz">
                     <div class="cs-quiz-wrapper">
                         <div class="cs-quiz-topbar">
                             <div class="cs-step-counter" id="quiz-counter"></div>
@@ -114,81 +224,93 @@ class Quiz {
                         <div class="cs-quiz-container"></div>
                     </div>
                 </div>`
-            );
-        }
-
-        this.wrapper = document.querySelector(".cs-quiz-wrapper");
-        this.topBar = this.wrapper.querySelector(".cs-quiz-topbar");
-        this.controllsBar = this.wrapper.querySelector(".cs-controlls");
-        this.counter = this.wrapper.querySelector("#quiz-counter");
-        this.container = this.wrapper.querySelector(".cs-quiz-container");
-        
-        // Attach close event listener
-        this.closeButton = this.wrapper.querySelector(".cs-close-button");
-        this.closeButton.addEventListener("click", () => this.closeQuiz());
+      );
     }
-    
-closeQuiz() {
+
+    this.wrapper = document.querySelector(".cs-quiz-wrapper");
+    this.topBar = this.wrapper.querySelector(".cs-quiz-topbar");
+    this.controllsBar = this.wrapper.querySelector(".cs-controlls");
+    this.counter = this.wrapper.querySelector("#quiz-counter");
+    this.container = this.wrapper.querySelector(".cs-quiz-container");
+
+    // Attach close event listener
+    this.closeButton = this.wrapper.querySelector(".cs-close-button");
+    this.closeButton.addEventListener("click", () => this.closeQuiz());
+  }
+
+  closeQuiz() {
     clearInterval(this.controller.timer);
 
     const quizElement = document.querySelector(".cs-quiz");
     if (quizElement) {
-        quizElement.remove();
+      quizElement.remove();
     }
     this.quizData = null;
     this.currentStep = 0;
     this.userAnswers = [];
     this.score = 0;
-}
+  }
 
-    updateQuestionCounter() {
-        if (this.counter) {
-            this.counter.innerText = `${this.currentStep + 1} / ${this.quizData.length}`;
-        }
+  updateQuestionCounter() {
+    if (this.counter) {
+      this.counter.innerText = `${this.currentStep + 1} / ${
+        this.quizData.length
+      }`;
     }
+  }
 
-    async fetchQuizData() {
-        try {
-            const response = await fetch(`${this.apiUrl}/quiz/${this.quizId}`);
-            const data = await response.json();
+  async fetchQuizData() {
+    try {
+      const response = await fetch(`${this.apiUrl}/quiz/${this.quizId}`);
+      const data = await response.json();
 
-            if (!data.success || !data.questions?.length) {
-                throw new Error("No questions found.");
-            }
+      if (!data.success || !data.questions?.length) {
+        throw new Error("No questions found.");
+      }
 
-            this.quizTitle = data.title;
-            this.quizDescription = data.description;
-            this.quizImage = data.featured_image;
-            this.quizData = data.questions;
-            this.timePerQuestion = data.time_per_question || 10;
+      this.quizTitle = data.title;
+      this.quizDescription = data.description;
+      this.quizImage = data.featured_image;
+      this.quizData = data.questions;
+      this.quizDifficulty = data.quiz_difficulty;
+      this.categoryColor = data.category_color || "#6A0DAD";
+      this.categoryName = data.category_name || "Opšte";
+      this.timePerQuestion = data.time_per_question || 10;
+      this.allowGuestPlay = data.allow_guest_play || false;
 
-            this.updateQuestionCounter();
-            this.controller.showIntroScreen();
-        } catch (error) {
-            this.controller.showError("Failed to load quiz.");
-        }
+      // Inject color as CSS variable
+      this.wrapper.style.setProperty(
+        "--quiz-primary-color",
+        this.categoryColor
+      );
+
+      this.updateQuestionCounter();
+      this.controller.showIntroScreen();
+    } catch (error) {
+      this.controller.showError("Failed to load quiz.");
     }
+  }
 }
 class QuizController {
-    constructor(quiz) {
-        this.quiz = quiz;
-        this.container = quiz.container;
-        this.isMuted = localStorage.getItem("quizMuted") === "true";
+  constructor(quiz) {
+    this.quiz = quiz;
+    this.container = quiz.container;
+    this.isMuted = localStorage.getItem("quizMuted") === "true";
 
-        this.sounds = {
-            correct: this.loadSound("correct.mp3"),
-            wrong: this.loadSound("wrong.mp3"),
-            background: this.loadSound("background.mp3", true, 0.2),
-        };
+    this.sounds = {
+      correct: this.loadSound("correct.mp3"),
+      wrong: this.loadSound("wrong.mp3"),
+      background: this.loadSound("background.mp3", true, 0.2),
+    };
 
-        this.createMuteButton();
-    }
-    
-    showError(message) {
-        console.error("Quiz Error:", message); // Good to log the error too
+    this.createMuteButton();
+  }
 
-        // Display the error message within the quiz container
-        this.container.innerHTML = `
+  showError(message) {
+    console.error("Quiz Error:", message); // Good to log the error too
+
+    // Display the error message within the quiz container
+    this.container.innerHTML = `
             <div class="cs-quiz-error fade-in">
                 <h2>Greška!</h2> 
                 <p>${message}</p>
@@ -197,136 +319,154 @@ class QuizController {
                 
             </div>
         `;
-        // You might want to hide other UI elements like the counter if an error occurs
-        if (this.quiz && this.quiz.counter) {
-             this.quiz.counter.classList.remove("cs-show");
-        }
-        // Stop background sound if playing
-        if (this.sounds && this.sounds.background) {
-             this.sounds.background.pause();
-             this.sounds.background.currentTime = 0; // Reset playback position
-        }
+    // You might want to hide other UI elements like the counter if an error occurs
+    if (this.quiz && this.quiz.counter) {
+      this.quiz.counter.classList.remove("cs-show");
     }
-
-    loadSound(fileName, loop = false, volume = 1.0) {
-        const sound = new Audio(quizSettings.soundPath + fileName);
-        sound.loop = loop;
-        sound.volume = volume;
-        sound.muted = this.isMuted;
-        return sound;
+    // Stop background sound if playing
+    if (this.sounds && this.sounds.background) {
+      this.sounds.background.pause();
+      this.sounds.background.currentTime = 0; // Reset playback position
     }
-
-    createMuteButton() {
-        const muteButton = document.createElement("button");
-        muteButton.innerText = this.isMuted ? "🔇" : "🔊";
-        muteButton.classList.add("cs-mute-button");
-        muteButton.onclick = () => this.toggleMute(muteButton);
-
-        this.quiz.controllsBar.appendChild(muteButton);
-    }
-
-    toggleMute(button) {
-        this.isMuted = !this.isMuted;
-        localStorage.setItem("quizMuted", this.isMuted);
-        button.innerText = this.isMuted ? "🔇" : "🔊";
-        Object.values(this.sounds).forEach(sound => sound.muted = this.isMuted);
-    }
-
-showIntroScreen() {
-  this.container.innerHTML = Templates.introScreen(
-    this.quiz.quizTitle, this.quiz.quizDescription, this.quiz.quizImage
-  );
-  document.getElementById('start-btn').addEventListener('click', async () => {
-    try {
-      await this.quiz.startAttempt();   // spend tokens + get attempt_id
-      this.startQuiz();
-    } catch (e) {
-      this.showError(e.message || 'Neuspešno pokretanje kviza.');
-    }
-  });
-}
-
-    startQuiz() {
-        if (!this.isMuted) this.sounds.background.play();
-        this.quiz.updateQuestionCounter();
-        
-        this.quiz.counter.classList.add("cs-show");
-        
-        this.showQuestion();
-    }
-
-    showQuestion() {
-        this.quiz.updateQuestionCounter(); 
-        const question = this.quiz.quizData[this.quiz.currentStep];
-        this.container.innerHTML = Templates.questionScreen(
-            question, this.quiz.currentStep, this.quiz.quizData.length, this.quiz.timePerQuestion
-        );
-
-        const answersContainer = document.getElementById('answers');
-        question.answers.forEach(answer => {
-            const button = document.createElement('button');
-            button.innerText = answer;
-            button.classList.add('cs-answer-btn');
-            button.addEventListener('click', () => this.checkAnswer(button, answer));
-            answersContainer.appendChild(button);
-        });
-
-        this.startTimer();
-    }
-
-
-startTimer() {
-  clearInterval(this.timer);
-  const timerDisplay = document.getElementById("timer");
-  const progressRing = document.querySelector(".cs-progress-ring-fill");
-  let timeLeft = this.quiz.timePerQuestion;
-  const maxTime = this.quiz.timePerQuestion;
-
-  const radius = 55, circumference = 2 * Math.PI * radius;
-  if (progressRing) {
-    progressRing.style.strokeDasharray = `${circumference}`;
-    progressRing.style.strokeDashoffset = 0;
   }
 
-  this.timer = setInterval(() => {
-    timeLeft--;
-    if (timerDisplay) timerDisplay.innerText = timeLeft;
+  loadSound(fileName, loop = false, volume = 1.0) {
+    const sound = new Audio(quizSettings.soundPath + fileName);
+    sound.loop = loop;
+    sound.volume = volume;
+    sound.muted = this.isMuted;
+    return sound;
+  }
+
+  createMuteButton() {
+    const muteButton = document.createElement("button");
+    muteButton.innerText = this.isMuted ? "🔇" : "🔊";
+    muteButton.classList.add("cs-mute-button");
+    muteButton.onclick = () => this.toggleMute(muteButton);
+
+    this.quiz.controllsBar.appendChild(muteButton);
+  }
+
+  toggleMute(button) {
+    this.isMuted = !this.isMuted;
+    localStorage.setItem("quizMuted", this.isMuted);
+    button.innerText = this.isMuted ? "🔇" : "🔊";
+    Object.values(this.sounds).forEach((sound) => (sound.muted = this.isMuted));
+  }
+
+  showIntroScreen() {
+    this.container.innerHTML = Templates.introScreen({
+      title: this.quiz.quizTitle,
+      description: this.quiz.quizDescription,
+      featured_image: this.quiz.quizImage,
+      category_name: this.quiz.categoryName,
+      num_questions: this.quiz.quizData.length,
+      time_per_question: this.quiz.timePerQuestion,
+      quiz_difficulty: this.quiz.quizDifficulty,
+    });
+
+    document.getElementById("start-btn").addEventListener("click", async () => {
+      try {
+        await this.quiz.startAttempt();
+        this.startQuiz();
+      } catch (e) {
+        this.showError(e.message || "Neuspešno pokretanje kviza.");
+      }
+    });
+  }
+
+  showLoginPrompt() {
+    this.container.innerHTML = Templates.loginPrompt();
+  }
+
+  startQuiz() {
+    if (!this.isMuted) this.sounds.background.play();
+    this.quiz.updateQuestionCounter();
+
+    this.quiz.counter.classList.add("cs-show");
+
+    this.showQuestion();
+  }
+
+  showQuestion() {
+    this.quiz.updateQuestionCounter();
+    const question = this.quiz.quizData[this.quiz.currentStep];
+    this.container.innerHTML = Templates.questionScreen(
+      question,
+      this.quiz.currentStep + 1,
+      this.quiz.quizData.length,
+      this.quiz.timePerQuestion
+    );
+
+    const answersContainer = document.getElementById("answers");
+    question.answers.forEach((answer) => {
+      const button = document.createElement("button");
+      button.innerText = answer;
+      button.classList.add("cs-answer-btn");
+      button.addEventListener("click", () => this.checkAnswer(button, answer));
+      answersContainer.appendChild(button);
+    });
+
+    this.startTimer();
+  }
+
+  startTimer() {
+    clearInterval(this.timer);
+    const timerDisplay = document.getElementById("timer");
+    const progressRing = document.querySelector(".ygv-timer-ring-progress");
+    let timeLeft = this.quiz.timePerQuestion;
+    const maxTime = this.quiz.timePerQuestion;
+
+    const radius = 36,
+      circumference = 2 * Math.PI * radius;
     if (progressRing) {
-      progressRing.style.strokeDashoffset = ((maxTime - timeLeft) / maxTime) * circumference;
-      if (timeLeft <= maxTime / 2) progressRing.style.stroke = "orange";
-      if (timeLeft <= 3) progressRing.style.stroke = "red";
-    }
-    if (timeLeft <= 0) { clearInterval(this.timer); this.markTimeoutAsWrong(); }
-  }, 1000);
-}
-
-    disableAllButtons() {
-        document.querySelectorAll('.cs-answer-btn').forEach(btn => btn.disabled = true);
+      progressRing.style.strokeDasharray = `${circumference}`;
+      progressRing.style.strokeDashoffset = 0;
     }
 
-    highlightCorrectAnswer(correctAnswer) {
-        document.querySelectorAll('.cs-answer-btn').forEach(btn => {
-            if (btn.innerText === correctAnswer) btn.classList.add('cs-correct');
-        });
-    }
+    this.timer = setInterval(() => {
+      timeLeft--;
+      if (timerDisplay) timerDisplay.innerText = timeLeft;
+      if (progressRing) {
+        progressRing.style.strokeDashoffset =
+          ((maxTime - timeLeft) / maxTime) * circumference;
+      }
+      if (timeLeft <= 0) {
+        clearInterval(this.timer);
+        this.markTimeoutAsWrong();
+      }
+    }, 1000);
+  }
 
-    markTimeoutAsWrong() {
-        const question = this.quiz.quizData[this.quiz.currentStep];
-        this.disableAllButtons();
-        this.highlightCorrectAnswer(question.answers[question.correct]);
+  disableAllButtons() {
+    document
+      .querySelectorAll(".cs-answer-btn")
+      .forEach((btn) => (btn.disabled = true));
+  }
 
-        this.sounds.wrong.play();
-        this.quiz.userAnswers.push({
-            question: question.title,
-            selected: "(No Answer)",
-            correct: question.answers[question.correct],
-            isCorrect: false
-        });
+  highlightCorrectAnswer(correctAnswer) {
+    document.querySelectorAll(".cs-answer-btn").forEach((btn) => {
+      if (btn.innerText === correctAnswer) btn.classList.add("cs-correct");
+    });
+  }
 
-        setTimeout(() => this.nextQuestion(), 2000);
-    }
+  markTimeoutAsWrong() {
+    const question = this.quiz.quizData[this.quiz.currentStep];
+    this.disableAllButtons();
+    this.highlightCorrectAnswer(question.answers[question.correct]);
 
-checkAnswer(button, selectedAnswer) {
+    this.sounds.wrong.play();
+    this.quiz.userAnswers.push({
+      question: question.title,
+      selected: "(No Answer)",
+      correct: question.answers[question.correct],
+      isCorrect: false,
+    });
+
+    setTimeout(() => this.nextQuestion(), 2000);
+  }
+
+  checkAnswer(button, selectedAnswer) {
     clearInterval(this.timer);
     const question = this.quiz.quizData[this.quiz.currentStep];
 
@@ -337,106 +477,110 @@ checkAnswer(button, selectedAnswer) {
     this.disableAllButtons();
 
     if (isCorrect) {
-        button.classList.add('cs-correct');
-        this.sounds.correct.play();
-        this.quiz.score++;
+      button.classList.add("cs-correct");
+      this.sounds.correct.play();
+      this.quiz.score++;
     } else {
-        button.classList.add('cs-wrong');
-        this.sounds.wrong.play();
-        this.highlightCorrectAnswer(correctAnswer); // ✅ Now highlights the actual correct answer
+      button.classList.add("cs-wrong");
+      this.sounds.wrong.play();
+      this.highlightCorrectAnswer(correctAnswer); // ✅ Now highlights the actual correct answer
     }
 
     this.quiz.userAnswers.push({
-        question: question.title,
-        selected: selectedAnswer,
-        correct: correctAnswer, // ✅ Ensure correct answer is properly stored
-        isCorrect
+      question: question.title,
+      selected: selectedAnswer,
+      correct: correctAnswer, // ✅ Ensure correct answer is properly stored
+      isCorrect,
     });
 
     setTimeout(() => this.nextQuestion(), 1500);
-}
+  }
 
+  nextQuestion() {
+    this.quiz.currentStep++;
 
-
-    nextQuestion() {
-        this.quiz.currentStep++;
-
-        if (this.quiz.currentStep < this.quiz.quizData.length) {
-            this.showWaitingScreen();
-        } else {
-            this.showSummary();
-        }
+    if (this.quiz.currentStep < this.quiz.quizData.length) {
+      this.showWaitingScreen();
+    } else {
+      this.showSummary();
     }
+  }
 
-
-showWaitingScreen() {
-    this.quiz.updateQuestionCounter(); 
-    let countdownTime = 2; // ✅ Start countdown from 3 seconds
-    this.container.innerHTML = Templates.nextQuestionScreen(
-        this.quiz.currentStep + 1, 
-        this.quiz.quizData.length,
-        countdownTime
+  showWaitingScreen() {
+    this.quiz.updateQuestionCounter();
+    let countdownTime = 3;
+    this.container.innerHTML = Templates.waitScreen(
+      this.quiz.currentStep + 1,
+      this.quiz.quizData.length,
+      countdownTime
     );
 
     const countdownDisplay = document.getElementById("countdownTimer");
-    const progressRing = document.querySelector(".cs-progress-ring-fill");
+    const progressRing = document.querySelector(".ygv-countdown-progress");
     const maxTime = countdownTime;
-    const circumference = 2 * Math.PI * 55;
+    const circumference = 2 * Math.PI * 54;
 
     progressRing.style.strokeDasharray = circumference;
     progressRing.style.strokeDashoffset = 0;
 
     let countdownTimer = setInterval(() => {
-        countdownTime--;
-        countdownDisplay.innerText = countdownTime;
+      countdownTime--;
+      countdownDisplay.innerText = countdownTime;
 
-        // ✅ Update progress ring (keeps shrinking)
-        progressRing.style.strokeDashoffset = ((maxTime - countdownTime) / maxTime) * circumference;
+      // ✅ Update progress ring (keeps shrinking)
+      progressRing.style.strokeDashoffset =
+        ((maxTime - countdownTime) / maxTime) * circumference;
 
-        if (countdownTime <= 0) {
-            clearInterval(countdownTimer);
-            this.showQuestion(); // ✅ Move to next question after countdown
-        }
+      if (countdownTime <= 0) {
+        clearInterval(countdownTimer);
+        this.showQuestion(); // ✅ Move to next question after countdown
+      }
     }, 1000);
+  }
+
+  async showSummary() {
+    try {
+      await this.quiz.submitAttempt();
+    } catch (e) {
+      console.error(e);
+    }
+    this.container.innerHTML = Templates.summaryScreen(
+      this.quiz.score,
+      this.quiz.quizData.length
+    );
+    this.sounds.background.pause();
+  }
 }
 
-    async showSummary() {
-  try { await this.quiz.submitAttempt(); } catch (e) { console.error(e); }
-  this.container.innerHTML = Templates.summaryScreen(this.quiz.score, this.quiz.quizData.length);
-  this.sounds.background.pause();
-}
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.cs-quiz-card').forEach(card => {
-    const btnWrap = card.querySelector('.cs-quiz-button');
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".cs-quiz-card").forEach((card) => {
+    const btnWrap = card.querySelector(".cs-quiz-button");
     if (!btnWrap) return;
 
-    const anchor = btnWrap.querySelector('a') || btnWrap;
+    const anchor = btnWrap.querySelector("a") || btnWrap;
 
     // Prefer data-quiz-id on the card if you can add it in Elementor (Advanced → Attributes → data-quiz-id = {{ID}})
     const idFromData = card.dataset.quizId;
-    const idFromHidden = card.querySelector('.cs-quiz-id')?.textContent?.trim();
+    const idFromHidden = card.querySelector(".cs-quiz-id")?.textContent?.trim();
     const idFromClass = (card.className.match(/post-(\d+)/) || [])[1];
     const quizId = idFromData || idFromHidden || idFromClass;
 
     if (!quizId) {
-      console.error('Quiz ID not found for card:', card);
+      console.error("Quiz ID not found for card:", card);
       return;
     }
 
-    anchor.addEventListener('click', (e) => {
-      e.preventDefault();            // prevent href="#" jump
-      if (anchor.classList.contains('is-busy')) return; // guard double click
-      anchor.classList.add('is-busy');
+    anchor.addEventListener("click", (e) => {
+      e.preventDefault(); // prevent href="#" jump
+      if (anchor.classList.contains("is-busy")) return; // guard double click
+      anchor.classList.add("is-busy");
 
       // close any running quiz instance
       if (window.currentQuiz?.closeQuiz) window.currentQuiz.closeQuiz();
 
       window.currentQuiz = new Quiz(quizSettings.apiUrl, quizId);
 
-      setTimeout(() => anchor.classList.remove('is-busy'), 800);
+      setTimeout(() => anchor.classList.remove("is-busy"), 800);
     });
   });
 });
-
