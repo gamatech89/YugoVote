@@ -57,13 +57,10 @@ document.addEventListener("DOMContentLoaded", function () {
       formData.append("category", currentCategory);
       formData.append("sort_by", currentSort);
 
-      const response = await fetch(
-        window.ajaxurl || "/wp-admin/admin-ajax.php",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const response = await fetch(yuvAjax.ajaxurl, {
+        method: "POST",
+        body: formData,
+      });
 
       const result = await response.json();
 
