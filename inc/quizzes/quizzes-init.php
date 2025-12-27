@@ -37,6 +37,10 @@ if (file_exists($levels_sc)) require_once $levels_sc;
 $quiz_grid_sc = $quizzes_inc_path . 'shortcodes/quiz-grid-shortcode.php';
 if (file_exists($quiz_grid_sc)) require_once $quiz_grid_sc;
 
+// ✅ NEW: Quiz Grid AJAX Handler
+$quiz_ajax_grid = $quizzes_inc_path . 'api/quiz-ajax-grid.php';
+if (file_exists($quiz_ajax_grid)) require_once $quiz_ajax_grid;
+
 // Accessors
 if (!function_exists('ygv_tokens')) {
     function ygv_tokens(): YGV_Token_Service {

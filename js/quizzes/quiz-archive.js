@@ -86,12 +86,11 @@ document.addEventListener("DOMContentLoaded", function () {
         attachQuizCardListeners();
       } else {
         if (!append) {
+          const message = result.data?.message || "Nema dostupnih kvizova.";
           grid.innerHTML = `
                         <div class="yuv-quiz-empty">
                             <i class="ri-survey-line" style="font-size: 4rem; color: #ccc; margin-bottom: 20px;"></i>
-                            <p>${
-                              result.data.message || "Nema dostupnih kvizova."
-                            }</p>
+                            <p>${message}</p>
                         </div>
                     `;
         }
