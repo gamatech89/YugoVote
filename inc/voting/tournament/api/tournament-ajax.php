@@ -97,16 +97,24 @@ function yuv_search_voting_items_ajax() {
 
 // Cast tournament vote
 add_action('wp_ajax_yuv_cast_tournament_vote', 'yuv_cast_tournament_vote_ajax');
+add_action('wp_ajax_nopriv_yuv_cast_tournament_vote', 'yuv_cast_tournament_vote_ajax');
 
 function yuv_cast_tournament_vote_ajax() {
-    check_ajax_referer('yuv_tournament_vote_nonce', '_ajax_nonce');
-
-    // Check if user is logged in
-    if (!is_user_logged_in()) {
-        wp_send_json_error(['message' => 'Morate biti ulogovani da biste glasali']);
+    // Log received data for debugging
+    error_log('Tournament vote AJAX called');
+    error_log('POST data: ' . print_r($_POST, true));
+    
+    // Verify nonce
+    $nonce_check = check_ajax_referer('yuv_tournament_vote_nonce', '_ajax_nonce', false);
+    if (!$nonce_check) {
+        error_log('Nonce verification failed');
+        wp_send_json_error(['message' => 'Sigurnosna provera nije uspela. Osvežite stranicu i pokušajte ponovo.']);
     }
 
-    $user_id = get_current_user_id();
+    // Get user ID (0 for guests)
+    $user_id = is_user_logged_in() ? get_current_user_id() : 0;
+    $user_ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    
     $match_id = intval($_POST['match_id']);
     $item_id = intval($_POST['item_id']);
 
@@ -127,16 +135,27 @@ function yuv_cast_tournament_vote_ajax() {
         wp_send_json_error(['message' => 'Vreme za glasanje je isteklo']);
     }
 
-    // Check if user already voted
+    // Check if user/guest already voted
     global $wpdb;
     $votes_table = $wpdb->prefix . 'voting_list_votes';
     
-    $existing_vote = $wpdb->get_var($wpdb->prepare(
-        "SELECT id FROM {$votes_table} 
-        WHERE voting_list_id = %d AND user_id = %d",
-        $match_id,
-        $user_id
-    ));
+    if ($user_id > 0) {
+        // Logged-in user: check by user_id
+        $existing_vote = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM {$votes_table} 
+            WHERE voting_list_id = %d AND user_id = %d",
+            $match_id,
+            $user_id
+        ));
+    } else {
+        // Guest: check by IP address
+        $existing_vote = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM {$votes_table} 
+            WHERE voting_list_id = %d AND user_id = 0 AND ip_address = %s",
+            $match_id,
+            $user_ip
+        ));
+    }
 
     if ($existing_vote) {
         wp_send_json_error(['message' => 'Već ste glasali u ovom meču']);
@@ -155,10 +174,11 @@ function yuv_cast_tournament_vote_ajax() {
             'voting_list_id' => $match_id,
             'voting_item_id' => $item_id,
             'user_id' => $user_id,
+            'ip_address' => $user_ip,
             'vote_value' => 10,
             'voted_at' => current_time('mysql'),
         ],
-        ['%d', '%d', '%d', '%d', '%s']
+        ['%d', '%d', '%d', '%s', '%d', '%s']
     );
 
     if ($inserted === false) {

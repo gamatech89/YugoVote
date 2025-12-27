@@ -269,6 +269,17 @@ function yuv_active_duel_shortcode($atts) {
     // Get match data
     $match_id = $active_match;
     $tournament_id = get_post_meta($match_id, '_yuv_tournament_id', true);
+    
+    // Check if tournament still exists
+    $tournament_exists = get_post_status($tournament_id);
+    if (!$tournament_exists || $tournament_exists === false) {
+        return '<div class="yuv-no-duel">
+            <div class="yuv-no-duel-icon">⚔️</div>
+            <h3>Trenutno nema aktivnih duela</h3>
+            <p>Pratite nas za najave novih turnira!</p>
+        </div>';
+    }
+    
     $match_title = get_the_title($match_id);
     $stage = get_post_meta($match_id, '_yuv_stage', true);
     $match_number = get_post_meta($match_id, '_yuv_match_number', true);
@@ -306,7 +317,12 @@ function yuv_active_duel_shortcode($atts) {
 
         $image = get_post_meta($item_id, '_custom_image_url', true);
         if (!$image) {
-            $image = get_the_post_thumbnail_url($item_id, 'large');
+            $image = get_the_post_thumbnail_url($item_id, 'full');
+        }
+        
+        // If custom image URL contains a WordPress thumbnail size, get the full size
+        if ($image && preg_match('/(-\d+x\d+)\.(jpg|jpeg|png|gif|webp)$/i', $image, $matches)) {
+            $image = str_replace($matches[1] . '.' . $matches[2], '.' . $matches[2], $image);
         }
 
         $contenders[] = [

@@ -26,6 +26,9 @@ require_once $tournament_path . 'tournament-cron.php';
 // Load shortcodes
 require_once $tournament_path . 'shortcodes/bracket-shortcode.php';
 
+// Load cleanup utilities
+require_once $tournament_path . 'tournament-cleanup.php';
+
 // Enqueue tournament assets
 add_action('wp_enqueue_scripts', 'yuv_enqueue_tournament_assets');
 

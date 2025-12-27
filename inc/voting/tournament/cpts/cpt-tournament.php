@@ -42,3 +42,30 @@ function yuv_register_tournament_cpt() {
     register_post_type('yuv_tournament', $args);
 }
 add_action('init', 'yuv_register_tournament_cpt');
+
+/**
+ * Delete all associated matches when a tournament is deleted
+ */
+function yuv_delete_tournament_matches($post_id) {
+    // Only run for tournaments
+    if (get_post_type($post_id) !== 'yuv_tournament') {
+        return;
+    }
+
+    global $wpdb;
+    
+    // Find all voting_list posts associated with this tournament
+    $match_ids = $wpdb->get_col($wpdb->prepare(
+        "SELECT post_id FROM {$wpdb->postmeta} 
+        WHERE meta_key = '_yuv_tournament_id' 
+        AND meta_value = %d",
+        $post_id
+    ));
+
+    // Force delete each match (bypass trash)
+    foreach ($match_ids as $match_id) {
+        wp_delete_post($match_id, true);
+    }
+}
+add_action('before_delete_post', 'yuv_delete_tournament_matches');
+add_action('trashed_post', 'yuv_delete_tournament_matches');

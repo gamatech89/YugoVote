@@ -52,6 +52,13 @@ jQuery(document).ready(function ($) {
     const btn = $(this);
     const itemId = btn.data("item-id");
 
+    // Debug logging
+    console.log("Vote button clicked");
+    console.log("Match ID:", matchId);
+    console.log("Item ID:", itemId);
+    console.log("Nonce:", yuvTournamentData.nonce);
+    console.log("AJAX URL:", yuvTournamentData.ajaxurl);
+
     // Disable all vote buttons
     $(".yuv-vote-btn").prop("disabled", true);
     btn.html(
