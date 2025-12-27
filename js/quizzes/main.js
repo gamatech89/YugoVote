@@ -632,3 +632,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+// ✅ Expose Quiz class globally for quiz grid and other integrations
+window.Quiz = Quiz;

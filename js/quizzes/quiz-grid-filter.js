@@ -68,22 +68,58 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Handle quiz card clicks (launch quiz modal)
-  document.querySelectorAll(".yuv-quiz-card-link").forEach((link) => {
-    link.addEventListener("click", function (e) {
-      e.preventDefault();
-      const quizId = this.getAttribute("data-quiz-id");
+  function attachQuizCardListeners() {
+    document.querySelectorAll(".yuv-quiz-card-link").forEach((link) => {
+      // Skip if already has listener
+      if (link.dataset.listenerAttached) return;
+      link.dataset.listenerAttached = "true";
 
-      if (quizId && window.Quiz && quizSettings) {
+      link.addEventListener("click", function (e) {
+        e.preventDefault();
+        const quizId = this.getAttribute("data-quiz-id");
+
+        if (!quizId) {
+          console.error("Quiz ID missing from card");
+          return;
+        }
+
+        if (!window.Quiz) {
+          console.error("Quiz class not loaded yet");
+          return;
+        }
+
+        if (!window.quizSettings || !window.quizSettings.apiUrl) {
+          console.error("quizSettings not available");
+          return;
+        }
+
         // Close any existing quiz
         if (window.currentQuiz?.closeQuiz) {
           window.currentQuiz.closeQuiz();
         }
 
         // Launch new quiz
-        window.currentQuiz = new Quiz(quizSettings.apiUrl, quizId);
-      } else {
-        console.error("Quiz system not loaded or quiz ID missing");
-      }
+        try {
+          window.currentQuiz = new window.Quiz(
+            window.quizSettings.apiUrl,
+            quizId
+          );
+        } catch (error) {
+          console.error("Failed to launch quiz:", error);
+        }
+      });
     });
+  }
+
+  // Initial attachment
+  attachQuizCardListeners();
+
+  // Re-attach after filtering (in case new cards are shown)
+  filterButtons.forEach((button) => {
+    const originalClickHandler = button.onclick;
+    button.onclick = function () {
+      if (originalClickHandler) originalClickHandler.call(this);
+      setTimeout(attachQuizCardListeners, 100);
+    };
   });
 });
