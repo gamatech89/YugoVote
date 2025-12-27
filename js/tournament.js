@@ -64,7 +64,7 @@ jQuery(document).ready(function ($) {
       type: "POST",
       data: {
         action: "yuv_cast_tournament_vote",
-        nonce: yuvTournamentData.nonce,
+        _ajax_nonce: yuvTournamentData.nonce,
         match_id: matchId,
         item_id: itemId,
       },
@@ -87,8 +87,10 @@ jQuery(document).ready(function ($) {
           );
         }
       },
-      error: function () {
-        alert("Greška pri glasanju. Proveri internet konekciju.");
+      error: function (xhr, status, error) {
+        console.error("AJAX Error:", status, error);
+        console.error("Response:", xhr.responseText);
+        alert("Greška pri glasanju. Proveri konzolu za više informacija.");
         $(".yuv-vote-btn").prop("disabled", false);
         btn.html(
           '<span class="yuv-vote-icon">⚡</span><span class="yuv-vote-text">GLASAJ</span>'
@@ -138,13 +140,24 @@ jQuery(document).ready(function ($) {
   // CONTENDER HOVER EFFECTS
   // ========================================================================
 
-  $(".yuv-contender")
+  $(".yuv-contender:not(.voted)")
     .on("mouseenter", function () {
-      if (!hasVoted) {
-        $(this).find(".yuv-contender-img").css("filter", "brightness(1.2)");
-      }
+      $(this).find(".yuv-contender-img").css("filter", "brightness(1.2)");
     })
     .on("mouseleave", function () {
       $(this).find(".yuv-contender-img").css("filter", "brightness(1)");
     });
+
+  // ========================================================================
+  // TIMELINE TOOLTIPS
+  // ========================================================================
+
+  $(".yuv-timeline-item").hover(
+    function () {
+      $(this).find(".yuv-match-tooltip").addClass("show");
+    },
+    function () {
+      $(this).find(".yuv-match-tooltip").removeClass("show");
+    }
+  );
 });

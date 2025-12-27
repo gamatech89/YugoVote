@@ -99,7 +99,7 @@ function yuv_search_voting_items_ajax() {
 add_action('wp_ajax_yuv_cast_tournament_vote', 'yuv_cast_tournament_vote_ajax');
 
 function yuv_cast_tournament_vote_ajax() {
-    check_ajax_referer('yuv_tournament_vote', 'nonce');
+    check_ajax_referer('yuv_tournament_vote_nonce', '_ajax_nonce');
 
     // Check if user is logged in
     if (!is_user_logged_in()) {

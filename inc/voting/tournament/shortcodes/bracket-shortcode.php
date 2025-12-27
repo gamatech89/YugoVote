@@ -324,17 +324,21 @@ function yuv_active_duel_shortcode($atts) {
         $c['percent'] = $total_votes > 0 ? round(($c['votes'] / $total_votes) * 100) : 50;
     }
 
-    // Get next matches
-    $next_matches = $wpdb->get_results($wpdb->prepare(
-        "SELECT p.ID, pm.meta_value as end_time
+    // Get ALL remaining matches for this tournament (enhanced timeline)
+    $all_future_matches = $wpdb->get_results($wpdb->prepare(
+        "SELECT p.ID, pm1.meta_value as end_time, pm2.meta_value as stage, pm3.meta_value as match_num
         FROM {$wpdb->posts} p
-        INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_yuv_end_time'
+        INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_end_time'
+        INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_stage'
+        INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_yuv_match_number'
+        INNER JOIN {$wpdb->postmeta} pm4 ON p.ID = pm4.post_id AND pm4.meta_key = '_yuv_tournament_id' AND pm4.meta_value = %d
         WHERE p.post_type = 'voting_list'
         AND p.post_status IN ('publish', 'future')
         AND p.ID != %d
-        AND pm.meta_value > %d
-        ORDER BY pm.meta_value ASC
-        LIMIT 2",
+        AND pm1.meta_value > %d
+        ORDER BY pm1.meta_value ASC
+        LIMIT 5",
+        $tournament_id,
         $match_id,
         $current_time
     ));
@@ -448,27 +452,77 @@ function yuv_active_duel_shortcode($atts) {
 
         </div>
 
-        <!-- Next Matches Panel -->
-        <?php if (!empty($next_matches)): ?>
-            <div class="yuv-next-matches-panel">
-                <h6 class="yuv-panel-title">📅 Sledeći duelovi:</h6>
-                <div class="yuv-mini-matches">
-                    <?php foreach ($next_matches as $next): 
-                        $next_items = get_post_meta($next->ID, '_voting_items', true) ?: [];
-                        if (count($next_items) < 2) continue;
+        <!-- Enhanced Timeline Panel with TBD Logic -->
+        <?php if (!empty($all_future_matches)): ?>
+            <div class="yuv-timeline-panel">
+                <h6 class="yuv-timeline-title">📅 Sledeći duelovi</h6>
+                <div class="yuv-timeline-list">
+                    <?php foreach ($all_future_matches as $future): 
+                        $future_items = get_post_meta($future->ID, '_voting_items', true) ?: [];
+                        $future_time = (int) $future->end_time;
                         
-                        $next_time = (int) $next->end_time;
-                        $time_until = $next_time - $current_time;
-                        $hours_until = floor($time_until / 3600);
+                        // Time formatting logic
+                        $time_diff = $future_time - $current_time;
+                        $days_until = floor($time_diff / 86400);
                         
-                        $img1 = get_post_meta($next_items[0], '_custom_image_url', true) ?: get_the_post_thumbnail_url($next_items[0], 'thumbnail');
-                        $img2 = get_post_meta($next_items[1], '_custom_image_url', true) ?: get_the_post_thumbnail_url($next_items[1], 'thumbnail');
+                        if ($days_until == 0) {
+                            $time_label = 'Danas, ' . date('H:i', $future_time);
+                        } elseif ($days_until == 1) {
+                            $time_label = 'Sutra, ' . date('H:i', $future_time);
+                        } else {
+                            $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+                            $days = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+                            $time_label = $days[date('w', $future_time)] . ', ' . date('d', $future_time) . '. ' . $months[date('n', $future_time) - 1];
+                        }
+
+                        // Stage labels
+                        $stage_map = ['qf' => 'Četvrtfinale', 'sf' => 'Polufinale', 'final' => 'FINALE'];
+                        $stage_label_future = $stage_map[$future->stage] ?? 'Meč';
+                        $match_label = $stage_label_future . ' ' . $future->match_num;
+
+                        // TBD logic for empty matches
+                        if (count($future_items) < 2) {
+                            $img1 = null;
+                            $img2 = null;
+                            $name1 = 'TBD';
+                            $name2 = 'TBD';
+                        } else {
+                            $item1 = get_post($future_items[0]);
+                            $item2 = get_post($future_items[1]);
+                            
+                            $img1 = get_post_meta($future_items[0], '_custom_image_url', true) ?: get_the_post_thumbnail_url($future_items[0], 'thumbnail');
+                            $img2 = get_post_meta($future_items[1], '_custom_image_url', true) ?: get_the_post_thumbnail_url($future_items[1], 'thumbnail');
+                            
+                            $name1 = $item1->post_title ?? 'TBD';
+                            $name2 = $item2->post_title ?? 'TBD';
+                        }
                     ?>
-                        <div class="yuv-mini-match">
-                            <?php if ($img1): ?><img src="<?php echo esc_url($img1); ?>" class="yuv-mini-thumb" alt=""><?php endif; ?>
-                            <span class="yuv-mini-vs">vs</span>
-                            <?php if ($img2): ?><img src="<?php echo esc_url($img2); ?>" class="yuv-mini-thumb" alt=""><?php endif; ?>
-                            <span class="yuv-mini-time">Za <?php echo $hours_until; ?>h</span>
+                        <div class="yuv-timeline-item">
+                            <div class="yuv-time-pill"><?php echo esc_html($time_label); ?></div>
+                            
+                            <div class="yuv-mini-card">
+                                <?php if ($img1): ?>
+                                    <img src="<?php echo esc_url($img1); ?>" class="yuv-mini-thumb left" alt="">
+                                <?php else: ?>
+                                    <div class="yuv-mystery-thumb">?</div>
+                                <?php endif; ?>
+                                
+                                <span class="yuv-mini-vs">vs</span>
+                                
+                                <?php if ($img2): ?>
+                                    <img src="<?php echo esc_url($img2); ?>" class="yuv-mini-thumb right" alt="">
+                                <?php else: ?>
+                                    <div class="yuv-mystery-thumb">?</div>
+                                <?php endif; ?>
+                                
+                                <!-- Tooltip on hover -->
+                                <div class="yuv-match-tooltip">
+                                    <strong class="yuv-tooltip-stage"><?php echo esc_html($match_label); ?></strong>
+                                    <div class="yuv-tooltip-names">
+                                        <?php echo esc_html($name1 . ' vs ' . $name2); ?>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
