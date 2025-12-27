@@ -289,9 +289,15 @@ function yuv_active_duel_shortcode($atts) {
     $match_id = $active_match;
     $tournament_id = get_post_meta($match_id, '_yuv_tournament_id', true);
     
+    error_log('Match ID: ' . $match_id);
+    error_log('Tournament ID: ' . $tournament_id);
+    
     // Check if tournament still exists
     $tournament_exists = get_post_status($tournament_id);
+    error_log('Tournament status: ' . ($tournament_exists ?: 'FALSE/NULL'));
+    
     if (!$tournament_exists || $tournament_exists === false) {
+        error_log('Tournament check FAILED - returning no duel message');
         return '<div class="yuv-no-duel">
             <div class="yuv-no-duel-icon">⚔️</div>
             <h3>Trenutno nema aktivnih duela</h3>
@@ -299,11 +305,18 @@ function yuv_active_duel_shortcode($atts) {
         </div>';
     }
     
+    error_log('Tournament check PASSED');
+    
     $match_title = get_the_title($match_id);
     $stage = get_post_meta($match_id, '_yuv_stage', true);
     $match_number = get_post_meta($match_id, '_yuv_match_number', true);
     $end_time = (int) get_post_meta($match_id, '_yuv_end_time', true);
     $items = get_post_meta($match_id, '_voting_items', true) ?: [];
+    
+    error_log('Match title: ' . $match_title);
+    error_log('Stage: ' . $stage);
+    error_log('Items count: ' . count($items));
+    error_log('Items: ' . print_r($items, true));
 
     // Check if user voted
     $user_id = get_current_user_id();
