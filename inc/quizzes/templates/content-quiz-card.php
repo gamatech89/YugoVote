@@ -1,13 +1,13 @@
 <?php
 /**
- * Template Part: Single Quiz Card
- * Used in quiz archive grid
+ * Template Part: Single Quiz Card with User Progress
  */
 
 if (!defined('ABSPATH')) exit;
 
 global $post;
 $quiz_id = get_the_ID();
+$current_user_id = get_current_user_id();
 
 // Fetch quiz meta
 $num_questions = get_post_meta($quiz_id, '_num_questions', true) ?: 10;
@@ -41,9 +41,59 @@ $excerpt = get_the_excerpt($quiz_id);
 // Calculate total time
 $total_time = $num_questions * $time_per_question;
 $total_time_minutes = ceil($total_time / 60);
+
+// ✅ User Progress (if logged in)
+$user_progress = null;
+$best_percent = 0;
+$attempts = 0;
+$is_completed = false;
+$is_new = true;
+
+if ($current_user_id > 0) {
+    global $wpdb;
+    $progress_table = $wpdb->prefix . 'ygv_user_quiz_progress';
+    
+    $user_progress = $wpdb->get_row($wpdb->prepare(
+        "SELECT best_percent, attempts, awarded_xp FROM {$progress_table} WHERE user_id = %d AND quiz_id = %d",
+        $current_user_id,
+        $quiz_id
+    ), ARRAY_A);
+    
+    if ($user_progress) {
+        $best_percent = (int) $user_progress['best_percent'];
+        $attempts = (int) $user_progress['attempts'];
+        $is_completed = $attempts > 0;
+        $is_new = false;
+    }
+}
+
+// Determine status badge
+$status_badge = '';
+$status_class = '';
+if ($current_user_id > 0) {
+    if ($is_completed) {
+        if ($best_percent >= 70) {
+            $status_badge = 'Odličan rezultat';
+            $status_class = 'excellent';
+        } elseif ($best_percent >= 40) {
+            $status_badge = 'Dobar rezultat';
+            $status_class = 'good';
+        } else {
+            $status_badge = 'Probaj ponovo';
+            $status_class = 'retry';
+        }
+    } else {
+        $status_badge = 'Nije igrano';
+        $status_class = 'new';
+    }
+}
 ?>
 
-<article class="yuv-quiz-card-entry" data-category="<?php echo esc_attr($category_slug); ?>" style="--quiz-card-color: <?php echo esc_attr($category_color); ?>">
+<article class="yuv-quiz-card-entry <?php echo $is_completed ? 'is-completed' : ''; ?> <?php echo $is_new ? 'is-new' : ''; ?>" 
+         data-category="<?php echo esc_attr($category_slug); ?>" 
+         data-quiz-id="<?php echo esc_attr($quiz_id); ?>"
+         style="--quiz-card-color: <?php echo esc_attr($category_color); ?>">
+    
     <a href="#" class="yuv-quiz-card-link" data-quiz-id="<?php echo esc_attr($quiz_id); ?>">
         
         <!-- Featured Image -->
@@ -58,6 +108,18 @@ $total_time_minutes = ceil($total_time / 60);
             <span class="yuv-quiz-card__badge" style="background-color: <?php echo esc_attr($category_color); ?>;">
                 <?php echo esc_html($category_name); ?>
             </span>
+
+            <!-- ✅ User Status Badge -->
+            <?php if ($current_user_id > 0 && $status_badge): ?>
+                <div class="yuv-quiz-card__status-badge <?php echo esc_attr($status_class); ?>">
+                    <?php if ($is_completed): ?>
+                        <i class="ri-checkbox-circle-fill"></i>
+                    <?php else: ?>
+                        <i class="ri-star-line"></i>
+                    <?php endif; ?>
+                    <span><?php echo esc_html($status_badge); ?></span>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Card Body -->
@@ -66,6 +128,19 @@ $total_time_minutes = ceil($total_time / 60);
             
             <?php if ($excerpt): ?>
                 <p class="yuv-quiz-card__excerpt"><?php echo esc_html(wp_trim_words($excerpt, 15)); ?></p>
+            <?php endif; ?>
+
+            <!-- ✅ User Progress Bar (if completed) -->
+            <?php if ($is_completed): ?>
+                <div class="yuv-quiz-card__progress">
+                    <div class="yuv-progress-bar">
+                        <div class="yuv-progress-fill" style="width: <?php echo esc_attr($best_percent); ?>%; background: var(--quiz-card-color);"></div>
+                    </div>
+                    <div class="yuv-progress-text">
+                        <span class="yuv-progress-score"><?php echo esc_html($best_percent); ?>%</span>
+                        <span class="yuv-progress-label">Tvoj najbolji rezultat</span>
+                    </div>
+                </div>
             <?php endif; ?>
 
             <!-- Meta Row -->
@@ -84,14 +159,27 @@ $total_time_minutes = ceil($total_time / 60);
                         <span><?php echo esc_html($quiz_difficulty); ?></span>
                     </div>
                 <?php endif; ?>
+                
+                <!-- ✅ Attempts count (if completed) -->
+                <?php if ($attempts > 0): ?>
+                    <div class="yuv-quiz-card__meta-item yuv-quiz-card__meta-attempts">
+                        <i class="ri-refresh-line"></i>
+                        <span><?php echo esc_html($attempts); ?>x pokušaja</span>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
 
         <!-- Card Footer -->
         <div class="yuv-quiz-card__footer">
             <span class="yuv-quiz-card__button" style="color: <?php echo esc_attr($category_color); ?>; background: <?php echo esc_attr($category_color); ?>1A;">
-                Započni Kviz
-                <i class="ri-arrow-right-line"></i>
+                <?php if ($is_completed): ?>
+                    <i class="ri-refresh-line"></i>
+                    Igraj Ponovo
+                <?php else: ?>
+                    <i class="ri-play-circle-line"></i>
+                    Započni Kviz
+                <?php endif; ?>
             </span>
         </div>
     </a>
