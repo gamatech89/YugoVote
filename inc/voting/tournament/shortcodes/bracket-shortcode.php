@@ -1,10 +1,11 @@
 <?php
 /**
- * Tournament Bracket Shortcode
+ * Tournament Bracket Shortcodes
  * Usage: 
  * - [yuv_auto_bracket id="123"] - Display specific tournament bracket
  * - [yuv_active_tournament] - Display currently active tournament (for home page)
  * - [yuv_tournament_archive] - Display list of all past tournaments (for archive page)
+ * - [yuv_active_duel] - Display current active duel in hero battle arena format
  */
 
 if (!defined('ABSPATH')) exit;
@@ -232,6 +233,260 @@ function yuv_render_tournament_bracket($tournament_id, $bracket_lists) {
     <?php
     return ob_get_clean();
 }
+
+/**
+ * Active Duel Shortcode - Hero Battle Arena
+ * Usage: [yuv_active_duel]
+ */
+function yuv_active_duel_shortcode($atts) {
+    global $wpdb;
+    
+    // Find currently active match
+    $current_time = current_time('timestamp');
+    
+    $active_match = $wpdb->get_var($wpdb->prepare(
+        "SELECT p.ID 
+        FROM {$wpdb->posts} p
+        INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_match_completed'
+        INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_end_time'
+        WHERE p.post_type = 'voting_list'
+        AND p.post_status = 'publish'
+        AND pm1.meta_value = '0'
+        AND pm2.meta_value > %d
+        ORDER BY pm2.meta_value ASC
+        LIMIT 1",
+        $current_time
+    ));
+
+    if (!$active_match) {
+        return '<div class="yuv-no-duel">
+            <div class="yuv-no-duel-icon">⚔️</div>
+            <h3>Trenutno nema aktivnih duela</h3>
+            <p>Pratite nas za najave novih turnira!</p>
+        </div>';
+    }
+
+    // Get match data
+    $match_id = $active_match;
+    $tournament_id = get_post_meta($match_id, '_yuv_tournament_id', true);
+    $match_title = get_the_title($match_id);
+    $stage = get_post_meta($match_id, '_yuv_stage', true);
+    $match_number = get_post_meta($match_id, '_yuv_match_number', true);
+    $end_time = (int) get_post_meta($match_id, '_yuv_end_time', true);
+    $items = get_post_meta($match_id, '_voting_items', true) ?: [];
+
+    // Check if user voted
+    $user_id = get_current_user_id();
+    $has_voted = false;
+    if ($user_id > 0) {
+        $votes_table = $wpdb->prefix . 'voting_list_votes';
+        $user_vote = $wpdb->get_var($wpdb->prepare(
+            "SELECT voting_item_id FROM {$votes_table} 
+            WHERE voting_list_id = %d AND user_id = %d",
+            $match_id,
+            $user_id
+        ));
+        $has_voted = !empty($user_vote);
+    }
+
+    // Get contenders data
+    $contenders = [];
+    foreach ($items as $item_id) {
+        $item = get_post($item_id);
+        if (!$item) continue;
+
+        // Get vote count
+        $votes_table = $wpdb->prefix . 'voting_list_votes';
+        $vote_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT SUM(vote_value) FROM {$votes_table} 
+            WHERE voting_list_id = %d AND voting_item_id = %d",
+            $match_id,
+            $item_id
+        ));
+
+        $image = get_post_meta($item_id, '_custom_image_url', true);
+        if (!$image) {
+            $image = get_the_post_thumbnail_url($item_id, 'large');
+        }
+
+        $contenders[] = [
+            'id' => $item_id,
+            'name' => $item->post_title,
+            'bio' => get_post_meta($item_id, '_short_description', true) ?: wp_trim_words($item->post_content, 20),
+            'image' => $image,
+            'votes' => (int) $vote_count,
+        ];
+    }
+
+    // Calculate percentages
+    $total_votes = array_sum(array_column($contenders, 'votes'));
+    foreach ($contenders as &$c) {
+        $c['percent'] = $total_votes > 0 ? round(($c['votes'] / $total_votes) * 100) : 50;
+    }
+
+    // Get next matches
+    $next_matches = $wpdb->get_results($wpdb->prepare(
+        "SELECT p.ID, pm.meta_value as end_time
+        FROM {$wpdb->posts} p
+        INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_yuv_end_time'
+        WHERE p.post_type = 'voting_list'
+        AND p.post_status IN ('publish', 'future')
+        AND p.ID != %d
+        AND pm.meta_value > %d
+        ORDER BY pm.meta_value ASC
+        LIMIT 2",
+        $match_id,
+        $current_time
+    ));
+
+    // Stage labels
+    $stage_labels = [
+        'qf' => 'Četvrtfinale',
+        'sf' => 'Polufinale',
+        'final' => 'FINALE'
+    ];
+    $stage_label = $stage_labels[$stage] ?? 'Meč';
+
+    ob_start();
+    ?>
+    
+    <div class="yuv-duel-arena" 
+         data-tournament-id="<?php echo esc_attr($tournament_id); ?>"
+         data-match-id="<?php echo esc_attr($match_id); ?>"
+         data-user-voted="<?php echo $has_voted ? 'true' : 'false'; ?>"
+         data-end-time="<?php echo esc_attr($end_time); ?>">
+        
+        <!-- Arena Header -->
+        <div class="yuv-arena-header">
+            <div class="yuv-match-info">
+                <span class="yuv-tournament-badge">🏆 TOURNAMENT DUEL</span>
+                <h4 class="yuv-match-title"><?php echo esc_html($stage_label . ' ' . $match_number); ?></h4>
+            </div>
+            <div class="yuv-countdown-timer">
+                <span class="yuv-timer-label">⏱️ Preostalo vreme:</span>
+                <div class="yuv-timer-display" id="duel-timer">
+                    <span class="yuv-time-segment"><span id="timer-hours">00</span>h</span>
+                    <span class="yuv-time-segment"><span id="timer-minutes">00</span>m</span>
+                    <span class="yuv-time-segment"><span id="timer-seconds">00</span>s</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Battle Arena -->
+        <div class="yuv-battle-arena">
+            
+            <!-- Left Contender -->
+            <?php if (!empty($contenders[0])): $left = $contenders[0]; ?>
+                <div class="yuv-contender yuv-left <?php echo $has_voted ? 'voted' : ''; ?>" 
+                     data-contender-id="<?php echo esc_attr($left['id']); ?>">
+                    
+                    <div class="yuv-contender-img" style="background-image: url('<?php echo esc_url($left['image'] ?: get_template_directory_uri() . '/assets/images/default-avatar.jpg'); ?>');">
+                        <div class="yuv-img-overlay"></div>
+                    </div>
+
+                    <div class="yuv-contender-info">
+                        <h2 class="yuv-contender-name"><?php echo esc_html($left['name']); ?></h2>
+                        <?php if ($left['bio']): ?>
+                            <p class="yuv-contender-bio"><?php echo esc_html($left['bio']); ?></p>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($has_voted): ?>
+                        <div class="yuv-result-bar">
+                            <div class="yuv-bar-fill" style="height: <?php echo esc_attr($left['percent']); ?>%"></div>
+                            <span class="yuv-percent"><?php echo esc_html($left['percent']); ?>%</span>
+                            <span class="yuv-vote-count"><?php echo esc_html($left['votes']); ?> glasova</span>
+                        </div>
+                    <?php else: ?>
+                        <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
+                            <span class="yuv-vote-icon">⚡</span>
+                            <span class="yuv-vote-text">GLASAJ</span>
+                        </button>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- VS Badge -->
+            <div class="yuv-vs-badge">
+                <svg width="100" height="100" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="48" fill="rgba(255,255,255,0.95)" stroke="#FF6B35" stroke-width="3"/>
+                    <text x="50" y="60" font-size="32" font-weight="900" fill="#FF6B35" text-anchor="middle">VS</text>
+                </svg>
+                <div class="yuv-lightning">⚡</div>
+            </div>
+
+            <!-- Right Contender -->
+            <?php if (!empty($contenders[1])): $right = $contenders[1]; ?>
+                <div class="yuv-contender yuv-right <?php echo $has_voted ? 'voted' : ''; ?>" 
+                     data-contender-id="<?php echo esc_attr($right['id']); ?>">
+                    
+                    <div class="yuv-contender-img" style="background-image: url('<?php echo esc_url($right['image'] ?: get_template_directory_uri() . '/assets/images/default-avatar.jpg'); ?>');">
+                        <div class="yuv-img-overlay"></div>
+                    </div>
+
+                    <div class="yuv-contender-info">
+                        <h2 class="yuv-contender-name"><?php echo esc_html($right['name']); ?></h2>
+                        <?php if ($right['bio']): ?>
+                            <p class="yuv-contender-bio"><?php echo esc_html($right['bio']); ?></p>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($has_voted): ?>
+                        <div class="yuv-result-bar">
+                            <div class="yuv-bar-fill" style="height: <?php echo esc_attr($right['percent']); ?>%"></div>
+                            <span class="yuv-percent"><?php echo esc_html($right['percent']); ?>%</span>
+                            <span class="yuv-vote-count"><?php echo esc_html($right['votes']); ?> glasova</span>
+                        </div>
+                    <?php else: ?>
+                        <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">
+                            <span class="yuv-vote-icon">⚡</span>
+                            <span class="yuv-vote-text">GLASAJ</span>
+                        </button>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+        </div>
+
+        <!-- Next Matches Panel -->
+        <?php if (!empty($next_matches)): ?>
+            <div class="yuv-next-matches-panel">
+                <h6 class="yuv-panel-title">📅 Sledeći duelovi:</h6>
+                <div class="yuv-mini-matches">
+                    <?php foreach ($next_matches as $next): 
+                        $next_items = get_post_meta($next->ID, '_voting_items', true) ?: [];
+                        if (count($next_items) < 2) continue;
+                        
+                        $next_time = (int) $next->end_time;
+                        $time_until = $next_time - $current_time;
+                        $hours_until = floor($time_until / 3600);
+                        
+                        $img1 = get_post_meta($next_items[0], '_custom_image_url', true) ?: get_the_post_thumbnail_url($next_items[0], 'thumbnail');
+                        $img2 = get_post_meta($next_items[1], '_custom_image_url', true) ?: get_the_post_thumbnail_url($next_items[1], 'thumbnail');
+                    ?>
+                        <div class="yuv-mini-match">
+                            <?php if ($img1): ?><img src="<?php echo esc_url($img1); ?>" class="yuv-mini-thumb" alt=""><?php endif; ?>
+                            <span class="yuv-mini-vs">vs</span>
+                            <?php if ($img2): ?><img src="<?php echo esc_url($img2); ?>" class="yuv-mini-thumb" alt=""><?php endif; ?>
+                            <span class="yuv-mini-time">Za <?php echo $hours_until; ?>h</span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <!-- Vote Confirmation Toast -->
+        <div id="yuv-vote-toast" class="yuv-vote-toast" style="display: none;">
+            <div class="yuv-toast-icon">✓</div>
+            <div class="yuv-toast-message">Tvoj glas je zabeležen!</div>
+        </div>
+
+    </div>
+
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('yuv_active_duel', 'yuv_active_duel_shortcode');
 
 /**
  * Tournament Archive Shortcode

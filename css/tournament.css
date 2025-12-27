@@ -1,0 +1,672 @@
+/**
+ * Tournament Duel Arena Styles
+ * Hero Battle Interface for Active Tournament Matches
+ */
+
+/* ==========================================================================
+   NO DUEL STATE
+   ========================================================================== */
+
+.yuv-no-duel {
+  text-align: center;
+  padding: 120px 40px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 20px;
+  color: #fff;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.yuv-no-duel-icon {
+  font-size: 80px;
+  margin-bottom: 24px;
+  animation: float 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 12px rgba(255, 107, 53, 0.4));
+}
+
+.yuv-no-duel h3 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  color: #fff;
+}
+
+.yuv-no-duel p {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+/* ==========================================================================
+   ARENA CONTAINER
+   ========================================================================== */
+
+.yuv-duel-arena {
+  position: relative;
+  width: 100%;
+  min-height: 600px;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ==========================================================================
+   ARENA HEADER
+   ========================================================================== */
+
+.yuv-arena-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid rgba(255, 107, 53, 0.3);
+}
+
+.yuv-match-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.yuv-tournament-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #ffd700;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.yuv-match-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.yuv-countdown-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.yuv-timer-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.yuv-timer-display {
+  display: flex;
+  gap: 12px;
+  font-family: "Courier New", monospace;
+}
+
+.yuv-time-segment {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ff6b35;
+  background: rgba(255, 107, 53, 0.1);
+  padding: 8px 14px;
+  border-radius: 8px;
+  min-width: 60px;
+  justify-content: center;
+}
+
+.yuv-time-segment span {
+  font-size: 24px;
+}
+
+/* ==========================================================================
+   BATTLE ARENA (SPLIT SCREEN)
+   ========================================================================== */
+
+.yuv-battle-arena {
+  display: flex;
+  position: relative;
+  min-height: 600px;
+}
+
+/* ==========================================================================
+   CONTENDERS
+   ========================================================================== */
+
+.yuv-contender {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+.yuv-contender:hover .yuv-contender-img {
+  transform: scale(1.05);
+}
+
+.yuv-contender-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: transform 0.6s ease;
+}
+
+.yuv-img-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 0.6) 40%,
+    transparent 100%
+  );
+}
+
+.yuv-contender-info {
+  position: relative;
+  z-index: 2;
+  padding: 40px;
+  text-align: center;
+}
+
+.yuv-contender-name {
+  font-size: 42px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+  line-height: 1.2;
+}
+
+.yuv-contender-bio {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   VOTE BUTTON
+   ========================================================================== */
+
+.yuv-vote-btn {
+  position: relative;
+  z-index: 3;
+  margin: 0 auto 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 48px;
+  font-size: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #fff;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.yuv-vote-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(255, 107, 53, 0.6);
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+}
+
+.yuv-vote-btn:active {
+  transform: translateY(-2px);
+}
+
+.yuv-vote-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  animation: none;
+}
+
+.yuv-vote-icon {
+  font-size: 24px;
+  animation: flicker 2s ease-in-out infinite;
+}
+
+.yuv-vote-text {
+  font-size: 18px;
+}
+
+/* ==========================================================================
+   RESULT BAR (AFTER VOTING)
+   ========================================================================== */
+
+.yuv-contender.voted {
+  cursor: default;
+}
+
+.yuv-result-bar {
+  position: relative;
+  z-index: 3;
+  width: 80px;
+  height: 250px;
+  margin: 0 auto 40px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.yuv-bar-fill {
+  width: 100%;
+  background: linear-gradient(to top, #ff6b35 0%, #ffd700 100%);
+  transition: height 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  position: relative;
+}
+
+.yuv-bar-fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 60%
+  );
+  animation: shimmer 2s infinite;
+}
+
+.yuv-percent {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  z-index: 2;
+}
+
+.yuv-vote-count {
+  position: absolute;
+  bottom: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   VS BADGE
+   ========================================================================== */
+
+.yuv-vs-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  animation: rotate 20s linear infinite;
+  filter: drop-shadow(0 8px 24px rgba(255, 107, 53, 0.6));
+}
+
+.yuv-vs-badge svg {
+  display: block;
+}
+
+.yuv-lightning {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 32px;
+  animation: flicker 1.5s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   NEXT MATCHES PANEL
+   ========================================================================== */
+
+.yuv-next-matches-panel {
+  padding: 24px 40px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-top: 2px solid rgba(255, 107, 53, 0.3);
+}
+
+.yuv-panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 16px;
+}
+
+.yuv-mini-matches {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.yuv-mini-match {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.yuv-mini-match:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 107, 53, 0.5);
+}
+
+.yuv-mini-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 107, 53, 0.4);
+}
+
+.yuv-mini-vs {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ff6b35;
+  text-transform: uppercase;
+}
+
+.yuv-mini-time {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: auto;
+}
+
+/* ==========================================================================
+   VOTE TOAST NOTIFICATION
+   ========================================================================== */
+
+.yuv-vote-toast {
+  position: fixed;
+  top: 100px;
+  right: 40px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 32px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(16, 185, 129, 0.4);
+  animation: slideInRight 0.4s ease-out;
+}
+
+.yuv-vote-toast.hiding {
+  animation: slideOutRight 0.4s ease-in forwards;
+}
+
+.yuv-toast-icon {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #fff;
+  font-weight: 900;
+}
+
+.yuv-toast-message {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+  }
+  50% {
+    box-shadow: 0 12px 32px rgba(255, 107, 53, 0.7);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE STYLES
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .yuv-arena-header {
+    padding: 20px 24px;
+  }
+
+  .yuv-match-title {
+    font-size: 20px;
+  }
+
+  .yuv-contender-name {
+    font-size: 36px;
+  }
+
+  .yuv-contender-info {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .yuv-battle-arena {
+    flex-direction: column;
+    min-height: 1000px;
+  }
+
+  .yuv-contender {
+    min-height: 500px;
+  }
+
+  .yuv-arena-header {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+
+  .yuv-countdown-timer {
+    align-items: center;
+  }
+
+  .yuv-vs-badge {
+    top: 50%;
+  }
+
+  .yuv-vs-badge svg {
+    width: 80px;
+    height: 80px;
+  }
+
+  .yuv-contender-name {
+    font-size: 32px;
+  }
+
+  .yuv-vote-btn {
+    padding: 16px 40px;
+    font-size: 16px;
+  }
+
+  .yuv-result-bar {
+    width: 70px;
+    height: 200px;
+  }
+
+  .yuv-next-matches-panel {
+    padding: 20px 24px;
+  }
+
+  .yuv-mini-matches {
+    flex-direction: column;
+  }
+
+  .yuv-vote-toast {
+    right: 20px;
+    top: 80px;
+    padding: 16px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .yuv-no-duel {
+    padding: 80px 20px;
+  }
+
+  .yuv-no-duel h3 {
+    font-size: 24px;
+  }
+
+  .yuv-arena-header {
+    padding: 16px 20px;
+  }
+
+  .yuv-match-title {
+    font-size: 16px;
+  }
+
+  .yuv-time-segment {
+    font-size: 16px;
+    padding: 6px 10px;
+    min-width: 50px;
+  }
+
+  .yuv-time-segment span {
+    font-size: 18px;
+  }
+
+  .yuv-contender-name {
+    font-size: 24px;
+  }
+
+  .yuv-contender-bio {
+    font-size: 14px;
+  }
+
+  .yuv-vote-btn {
+    padding: 14px 32px;
+    font-size: 14px;
+  }
+
+  .yuv-vote-icon {
+    font-size: 20px;
+  }
+
+  .yuv-next-matches-panel {
+    padding: 16px 20px;
+  }
+}

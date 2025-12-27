@@ -94,3 +94,79 @@ function yuv_search_voting_items_ajax() {
 
     wp_send_json_success($results);
 }
+
+// Cast tournament vote
+add_action('wp_ajax_yuv_cast_tournament_vote', 'yuv_cast_tournament_vote_ajax');
+
+function yuv_cast_tournament_vote_ajax() {
+    check_ajax_referer('yuv_tournament_vote', 'nonce');
+
+    // Check if user is logged in
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Morate biti ulogovani da biste glasali']);
+    }
+
+    $user_id = get_current_user_id();
+    $match_id = intval($_POST['match_id']);
+    $item_id = intval($_POST['item_id']);
+
+    if (!$match_id || !$item_id) {
+        wp_send_json_error(['message' => 'Nevažeći parametri']);
+    }
+
+    // Check if match is active
+    $match_completed = get_post_meta($match_id, '_yuv_match_completed', true);
+    if ($match_completed == '1') {
+        wp_send_json_error(['message' => 'Ovaj meč je već završen']);
+    }
+
+    // Check if match has expired
+    $end_time = (int) get_post_meta($match_id, '_yuv_end_time', true);
+    $current_time = current_time('timestamp');
+    if ($end_time <= $current_time) {
+        wp_send_json_error(['message' => 'Vreme za glasanje je isteklo']);
+    }
+
+    // Check if user already voted
+    global $wpdb;
+    $votes_table = $wpdb->prefix . 'voting_list_votes';
+    
+    $existing_vote = $wpdb->get_var($wpdb->prepare(
+        "SELECT id FROM {$votes_table} 
+        WHERE voting_list_id = %d AND user_id = %d",
+        $match_id,
+        $user_id
+    ));
+
+    if ($existing_vote) {
+        wp_send_json_error(['message' => 'Već ste glasali u ovom meču']);
+    }
+
+    // Verify item belongs to this match
+    $match_items = get_post_meta($match_id, '_voting_items', true);
+    if (!in_array($item_id, (array)$match_items)) {
+        wp_send_json_error(['message' => 'Nevažeći izbor']);
+    }
+
+    // Insert vote
+    $inserted = $wpdb->insert(
+        $votes_table,
+        [
+            'voting_list_id' => $match_id,
+            'voting_item_id' => $item_id,
+            'user_id' => $user_id,
+            'vote_value' => 10,
+            'voted_at' => current_time('mysql'),
+        ],
+        ['%d', '%d', '%d', '%d', '%s']
+    );
+
+    if ($inserted === false) {
+        wp_send_json_error(['message' => 'Greška pri beleženju glasa']);
+    }
+
+    wp_send_json_success([
+        'message' => 'Glas uspešno zabeležen!',
+        'vote_id' => $wpdb->insert_id,
+    ]);
+}

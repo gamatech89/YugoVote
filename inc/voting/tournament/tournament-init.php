@@ -25,3 +25,31 @@ require_once $tournament_path . 'tournament-cron.php';
 
 // Load shortcodes
 require_once $tournament_path . 'shortcodes/bracket-shortcode.php';
+
+// Enqueue tournament assets
+add_action('wp_enqueue_scripts', 'yuv_enqueue_tournament_assets');
+
+function yuv_enqueue_tournament_assets() {
+    // Enqueue tournament CSS
+    wp_enqueue_style(
+        'yuv-tournament-arena',
+        get_stylesheet_directory_uri() . '/css/tournament.css',
+        [],
+        '1.0.0'
+    );
+
+    // Enqueue tournament JS
+    wp_enqueue_script(
+        'yuv-tournament-arena',
+        get_stylesheet_directory_uri() . '/js/tournament.js',
+        ['jquery'],
+        '1.0.0',
+        true
+    );
+
+    // Localize script with AJAX data
+    wp_localize_script('yuv-tournament-arena', 'yuvTournamentData', [
+        'ajaxurl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('yuv_tournament_vote'),
+    ]);
+}
