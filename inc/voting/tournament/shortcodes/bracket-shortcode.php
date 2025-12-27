@@ -466,7 +466,10 @@ function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $al
                     <div class="yuv-contender-img" style="background-image: url('<?php echo esc_url($left['image']); ?>');">
                         <div class="yuv-img-overlay"></div>
                     </div>
-    
+
+                    <div class="yuv-contender-info">
+                        <h2 class="yuv-contender-name"><?php echo esc_html($left['name']); ?></h2>
+                        
                         <?php if (!$has_voted): ?>
                             <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
                                 <span class="yuv-vote-icon">⚡</span>
@@ -480,14 +483,8 @@ function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $al
                         <div class="yuv-result-bar" style="width: <?php echo esc_attr($left['percent']); ?>%;"></div>
                         <span class="yuv-percent"><?php echo esc_html($left['percent']); ?>%</span>
                         <span class="yuv-vote-count"><?php echo esc_html(number_format($left['votes'])); ?> glasova</span>
-                    </divn class="yuv-vote-count"><?php echo esc_html(number_format($left['votes'])); ?> glasova</span>
                     </div>
-
-                    <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
-                        <span class="yuv-vote-icon">⚡</span>
-                        <span class="yuv-vote-text">GLASAJ</span>
-                    </button>
-                </div> FIX 2: Proper positioning -
+                </div>
             <?php endif; ?>
 
             <!-- VS Badge -->
@@ -520,13 +517,9 @@ function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $al
                         <div class="yuv-result-bar" style="width: <?php echo esc_attr($right['percent']); ?>%;"></div>
                         <span class="yuv-percent"><?php echo esc_html($right['percent']); ?>%</span>
                         <span class="yuv-vote-count"><?php echo esc_html(number_format($right['votes'])); ?> glasova</span>
-                    </divclass="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">
-                        <span class="yuv-vote-icon">⚡</span>
-                        <span class="yuv-vote-text">GLASAJ</span>
-                    </button>
+                    </div>
                 </div>
             <?php endif; ?>
- FIX 5: Proper match_id links -
         </div>
 
         <!-- Navigation Strip (Footer with Links) -->
