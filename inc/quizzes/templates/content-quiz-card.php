@@ -186,8 +186,6 @@ if ($current_user_id > 0) {
                     </div>
                 <?php endif; ?>
             </div>
-                <?php endif; ?>
-            </div>
         </div>
 
         <!-- Card Footer -->
