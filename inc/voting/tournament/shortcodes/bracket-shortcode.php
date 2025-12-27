@@ -339,8 +339,17 @@ function yuv_active_duel_shortcode($atts) {
 
 /**
  * Render arena for a specific match with new UI
+ * Returns HTML string for both shortcode and AJAX
  */
 function yuv_render_arena($match_id, $tournament_id, $tournament_title, $all_matches, $user_id, $user_ip) {
+    $html = yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $all_matches, $user_id, $user_ip);
+    return $html;
+}
+
+/**
+ * Extracted HTML rendering logic for arena (reusable for AJAX)
+ */
+function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $all_matches, $user_id, $user_ip) {
     global $wpdb;
     
     $stage = get_post_meta($match_id, '_yuv_stage', true);

@@ -505,3 +505,112 @@ function yuv_get_next_match_ajax() {
         ],
     ]);
 }
+
+/**
+ * AJAX: Load tournament match HTML (for seamless navigation)
+ * Returns complete arena HTML for AJAX replacement
+ */
+add_action('wp_ajax_yuv_load_tournament_match_html', 'yuv_load_tournament_match_html_ajax');
+add_action('wp_ajax_nopriv_yuv_load_tournament_match_html', 'yuv_load_tournament_match_html_ajax');
+
+function yuv_load_tournament_match_html_ajax() {
+    global $wpdb;
+    
+    $user_id = get_current_user_id();
+    $user_ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $current_time = current_time('timestamp');
+    
+    // Get match_id from request (optional)
+    $requested_match_id = isset($_POST['match_id']) ? (int) $_POST['match_id'] : null;
+    
+    // Step 1: Find active tournament
+    $active_tournament = $wpdb->get_var(
+        "SELECT ID FROM {$wpdb->posts} 
+        WHERE post_type = 'yuv_tournament' 
+        AND post_status = 'publish' 
+        ORDER BY post_date DESC 
+        LIMIT 1"
+    );
+    
+    if (!$active_tournament) {
+        wp_send_json_error(['message' => 'Nema aktivnih turnira']);
+    }
+    
+    $tournament_id = $active_tournament;
+    $tournament_title = get_the_title($tournament_id);
+    $bracket_lists = get_post_meta($tournament_id, '_yuv_bracket_lists', true);
+    
+    if (empty($bracket_lists)) {
+        wp_send_json_error(['message' => 'Bracket nije kreiran']);
+    }
+    
+    // Step 2: Get ALL active matches
+    $all_match_ids = [];
+    foreach ($bracket_lists as $stage => $match_ids) {
+        $all_match_ids = array_merge($all_match_ids, $match_ids);
+    }
+    
+    // Filter to only published, non-expired, non-completed matches
+    $active_matches = [];
+    foreach ($all_match_ids as $match_id) {
+        $post_status = get_post_status($match_id);
+        $end_time = (int) get_post_meta($match_id, '_yuv_end_time', true);
+        $completed = get_post_meta($match_id, '_yuv_match_completed', true);
+        
+        if ($post_status === 'publish' && $end_time > $current_time && !$completed) {
+            $active_matches[] = $match_id;
+        }
+    }
+    
+    if (empty($active_matches)) {
+        wp_send_json_error(['message' => 'Nema aktivnih mečeva', 'stage_complete' => true]);
+    }
+    
+    // Step 3: Determine which match to load
+    $target_match_id = null;
+    
+    if ($requested_match_id && in_array($requested_match_id, $active_matches, true)) {
+        // Use requested match if valid
+        $target_match_id = $requested_match_id;
+    } else {
+        // Find first unvoted match
+        foreach ($active_matches as $match_id) {
+            if ($user_id > 0) {
+                $user_vote = $wpdb->get_var($wpdb->prepare(
+                    "SELECT id FROM {$wpdb->prefix}voting_list_votes 
+                    WHERE voting_list_id = %d AND user_id = %d",
+                    $match_id,
+                    $user_id
+                ));
+            } else {
+                $user_vote = $wpdb->get_var($wpdb->prepare(
+                    "SELECT id FROM {$wpdb->prefix}voting_list_votes 
+                    WHERE voting_list_id = %d AND user_id = 0 AND ip_address = %s",
+                    $match_id,
+                    $user_ip
+                ));
+            }
+            
+            if (!$user_vote) {
+                $target_match_id = $match_id;
+                break;
+            }
+        }
+        
+        // If all voted, show first match with results
+        if (!$target_match_id) {
+            $target_match_id = $active_matches[0];
+        }
+    }
+    
+    // Step 4: Render arena HTML
+    // Include the shortcode file to access yuv_render_arena_html
+    require_once get_stylesheet_directory() . '/inc/voting/tournament/shortcodes/bracket-shortcode.php';
+    
+    $html = yuv_render_arena_html($target_match_id, $tournament_id, $tournament_title, $active_matches, $user_id, $user_ip);
+    
+    wp_send_json_success([
+        'html' => $html,
+        'match_id' => $target_match_id
+    ]);
+}
