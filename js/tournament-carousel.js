@@ -68,15 +68,18 @@ jQuery(document).ready(function ($) {
   }
 
   // ========================================================================
-  // VOTE BUTTON HANDLER - TINDER STYLE
+  // VOTE BUTTON HANDLER - CAROUSEL STYLE (delegated)
   // ========================================================================
 
-  $(".yuv-vote-btn").on("click", function (e) {
+  $(document).on("click", ".yuv-vote-btn", function (e) {
     e.preventDefault();
 
     const btn = $(this);
     const itemId = btn.data("item-id");
     const contender = btn.closest(".yuv-contender");
+    
+    // Prevent double-clicks
+    if (btn.prop("disabled")) return;
 
     // Disable all vote buttons
     $(".yuv-vote-btn").prop("disabled", true);
@@ -212,7 +215,8 @@ jQuery(document).ready(function ($) {
     // Update first contender
     const $contender1 = $contenders.eq(0);
     $contender1.removeClass("yuv-winner-animation yuv-loser-animation");
-    $contender1.find(".yuv-contender-img").attr("src", item1.image);
+    const $img1 = $contender1.find(".yuv-contender-img");
+    $img1.attr("src", item1.image + "?t=" + Date.now()); // Force reload
     $contender1.find(".yuv-contender-name").text(item1.name);
     $contender1.find(".yuv-contender-desc").text(item1.description);
     $contender1
@@ -226,7 +230,8 @@ jQuery(document).ready(function ($) {
     // Update second contender
     const $contender2 = $contenders.eq(1);
     $contender2.removeClass("yuv-winner-animation yuv-loser-animation");
-    $contender2.find(".yuv-contender-img").attr("src", item2.image);
+    const $img2 = $contender2.find(".yuv-contender-img");
+    $img2.attr("src", item2.image + "?t=" + Date.now()); // Force reload
     $contender2.find(".yuv-contender-name").text(item2.name);
     $contender2.find(".yuv-contender-desc").text(item2.description);
     $contender2

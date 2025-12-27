@@ -446,14 +446,6 @@ function yuv_active_duel_shortcode($atts) {
     ob_start();
     ?>
     
-    <!-- Progress Bar -->
-    <div class="yuv-progress-container">
-        <div id="yuv-progress-bar" class="yuv-progress-bar">
-            <div class="yuv-progress-fill" style="width: 0%"></div>
-        </div>
-        <div id="yuv-progress-text" class="yuv-progress-text">0/<?php echo esc_html($total_stage_matches); ?> duels completed</div>
-    </div>
-    
     <div class="yuv-duel-arena" 
          data-tournament-id="<?php echo esc_attr($tournament_id); ?>"
          data-match-id="<?php echo esc_attr($match_id); ?>"
@@ -480,11 +472,17 @@ function yuv_active_duel_shortcode($atts) {
                 </div>
             </div>
         </div>
+        
+        <!-- Progress Bar (inside arena) -->
+        <div class="yuv-progress-container">
+            <div id="yuv-progress-bar" class="yuv-progress-bar">
+                <div class="yuv-progress-fill" style="width: 0%"></div>
+            </div>
+            <div id="yuv-progress-text" class="yuv-progress-text">0/<?php echo esc_html($total_stage_matches); ?> duels completed</div>
+        </div>
 
         <!-- Battle Arena -->
-        <div class="yuv-battle-arena">
-            
-            <!-- Left Contender -->
+        <div class="yuv-battle-arena">\n            \n            <!-- Left Contender -->
             <?php if (!empty($contenders[0])): $left = $contenders[0]; ?>
                 <div class="yuv-contender yuv-left <?php echo $has_voted ? 'voted' : ''; ?>" 
                      data-contender-id="<?php echo esc_attr($left['id']); ?>">
