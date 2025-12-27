@@ -55,6 +55,9 @@ if (file_exists($voting_inc_path . 'voting-scripts.php')) { // For enqueuing vot
     require_once $voting_inc_path . 'voting-scripts.php';
 }
 
+// Load Tournament Module
+require_once $voting_inc_path . 'tournament/tournament-init.php';
+
 
 
 ?>

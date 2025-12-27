@@ -1,0 +1,344 @@
+<?php
+/**
+ * Tournament Manager
+ * Handles bracket creation, round advancement, and tie-breaker logic
+ */
+
+if (!defined('ABSPATH')) exit;
+
+class YUV_Tournament_Manager {
+
+    /**
+     * Create tournament bracket (7 voting lists)
+     */
+    public function create_bracket($tournament_id) {
+        $contestants = get_post_meta($tournament_id, '_yuv_contestants', true);
+        $start_date = get_post_meta($tournament_id, '_yuv_start_date', true);
+        $qf_duration = (int) get_post_meta($tournament_id, '_yuv_round_duration_qf', true) ?: 24;
+
+        if (!is_array($contestants) || count($contestants) !== 8) {
+            return ['success' => false, 'message' => 'Potrebno je tačno 8 takmičara'];
+        }
+
+        if (empty($start_date)) {
+            return ['success' => false, 'message' => 'Datum početka nije postavljen'];
+        }
+
+        // Shuffle contestants for random bracket seeding
+        shuffle($contestants);
+
+        $tournament_title = get_the_title($tournament_id);
+        $lists = ['qf' => [], 'sf' => [], 'final' => []];
+
+        // Calculate start timestamp
+        $start_timestamp = strtotime($start_date);
+
+        // Create 4 Quarterfinal matches
+        for ($i = 0; $i < 4; $i++) {
+            $match_num = $i + 1;
+            $contestant1 = $contestants[$i * 2];
+            $contestant2 = $contestants[$i * 2 + 1];
+
+            $list_id = $this->create_match(
+                "$tournament_title - Četvrtfinale $match_num",
+                [$contestant1, $contestant2],
+                $start_timestamp,
+                $qf_duration,
+                $tournament_id,
+                'qf',
+                $match_num
+            );
+
+            $lists['qf'][] = $list_id;
+        }
+
+        // Create 2 Semifinal matches (future posts)
+        $sf_start = $start_timestamp + ($qf_duration * 3600);
+        $sf_duration = (int) get_post_meta($tournament_id, '_yuv_round_duration_sf', true) ?: 24;
+
+        for ($i = 0; $i < 2; $i++) {
+            $match_num = $i + 1;
+            $list_id = $this->create_match(
+                "$tournament_title - Polufinale $match_num",
+                [], // Empty initially
+                $sf_start,
+                $sf_duration,
+                $tournament_id,
+                'sf',
+                $match_num,
+                'future'
+            );
+
+            $lists['sf'][] = $list_id;
+
+            // Link QF winners to SF
+            $qf1_id = $lists['qf'][$i * 2];
+            $qf2_id = $lists['qf'][$i * 2 + 1];
+            update_post_meta($qf1_id, '_yuv_next_match', $list_id);
+            update_post_meta($qf2_id, '_yuv_next_match', $list_id);
+        }
+
+        // Create Final match (future post)
+        $final_start = $sf_start + ($sf_duration * 3600);
+        $final_duration = (int) get_post_meta($tournament_id, '_yuv_round_duration_final', true) ?: 48;
+
+        $final_id = $this->create_match(
+            "$tournament_title - FINALE",
+            [],
+            $final_start,
+            $final_duration,
+            $tournament_id,
+            'final',
+            1,
+            'future'
+        );
+
+        $lists['final'][] = $final_id;
+
+        // Link SF winners to Final
+        update_post_meta($lists['sf'][0], '_yuv_next_match', $final_id);
+        update_post_meta($lists['sf'][1], '_yuv_next_match', $final_id);
+
+        return ['success' => true, 'lists' => $lists];
+    }
+
+    /**
+     * Create single match (voting_list)
+     */
+    private function create_match($title, $contestants, $start_timestamp, $duration_hours, $tournament_id, $stage, $match_num, $status = 'publish') {
+        global $wpdb;
+
+        $post_id = wp_insert_post([
+            'post_type' => 'voting_list',
+            'post_title' => $title,
+            'post_status' => $status,
+            'post_date' => gmdate('Y-m-d H:i:s', $start_timestamp),
+        ]);
+
+        if (is_wp_error($post_id)) {
+            return 0;
+        }
+
+        // Tournament meta
+        update_post_meta($post_id, '_yuv_tournament_id', $tournament_id);
+        update_post_meta($post_id, '_yuv_stage', $stage);
+        update_post_meta($post_id, '_yuv_match_number', $match_num);
+        update_post_meta($post_id, '_yuv_end_time', $start_timestamp + ($duration_hours * 3600));
+        update_post_meta($post_id, '_yuv_match_completed', false);
+
+        // Voting settings
+        update_post_meta($post_id, '_voting_scale', 10);
+
+        // Create voting items if contestants provided
+        $item_ids = [];
+        if (!empty($contestants)) {
+            foreach ($contestants as $contestant) {
+                $item_id = wp_insert_post([
+                    'post_type' => 'voting_items',
+                    'post_title' => $contestant['name'],
+                    'post_status' => 'publish',
+                ]);
+
+                if (!is_wp_error($item_id)) {
+                    // Set featured image if URL provided
+                    if (!empty($contestant['image'])) {
+                        update_post_meta($item_id, '_custom_image_url', $contestant['image']);
+                    }
+
+                    // Add to relation table
+                    $wpdb->insert(
+                        $wpdb->prefix . 'voting_list_item_relations',
+                        [
+                            'voting_list_id' => $post_id,
+                            'voting_item_id' => $item_id,
+                            'custom_image_url' => $contestant['image'] ?? null,
+                        ]
+                    );
+
+                    $item_ids[] = $item_id;
+                }
+            }
+        }
+
+        update_post_meta($post_id, '_voting_items', $item_ids);
+
+        return $post_id;
+    }
+
+    /**
+     * Advance all tournaments (called by WP Cron)
+     */
+    public function advance_all_tournaments() {
+        $tournaments = get_posts([
+            'post_type' => 'yuv_tournament',
+            'post_status' => 'publish',
+            'posts_per_page' => -1,
+            'meta_query' => [
+                [
+                    'key' => '_yuv_bracket_created',
+                    'value' => '1',
+                ]
+            ]
+        ]);
+
+        foreach ($tournaments as $tournament) {
+            $this->advance_tournament($tournament->ID);
+        }
+    }
+
+    /**
+     * Advance single tournament
+     */
+    public function advance_tournament($tournament_id) {
+        global $wpdb;
+        
+        $bracket_lists = get_post_meta($tournament_id, '_yuv_bracket_lists', true);
+        if (empty($bracket_lists)) return;
+
+        $current_time = current_time('timestamp');
+        $advanced = [];
+
+        // Check all matches in all stages
+        foreach (['qf', 'sf', 'final'] as $stage) {
+            if (empty($bracket_lists[$stage])) continue;
+
+            foreach ($bracket_lists[$stage] as $list_id) {
+                $completed = get_post_meta($list_id, '_yuv_match_completed', true);
+                if ($completed) continue;
+
+                $end_time = (int) get_post_meta($list_id, '_yuv_end_time', true);
+                
+                // Check if match time expired
+                if ($current_time >= $end_time) {
+                    $result = $this->complete_match($list_id, $tournament_id);
+                    if ($result['success']) {
+                        $advanced[] = $result;
+                    }
+                }
+            }
+        }
+
+        // Log advancement
+        if (!empty($advanced)) {
+            update_post_meta($tournament_id, '_yuv_last_advancement', [
+                'timestamp' => $current_time,
+                'results' => $advanced,
+            ]);
+        }
+
+        return $advanced;
+    }
+
+    /**
+     * Complete match and advance winner
+     */
+    private function complete_match($list_id, $tournament_id) {
+        global $wpdb;
+
+        $votes_table = $wpdb->prefix . 'voting_list_votes';
+        $items = get_post_meta($list_id, '_voting_items', true);
+
+        if (empty($items) || count($items) !== 2) {
+            return ['success' => false, 'message' => 'Invalid match items'];
+        }
+
+        // Get vote counts for both items
+        $results = [];
+        foreach ($items as $item_id) {
+            $score = $wpdb->get_var($wpdb->prepare(
+                "SELECT SUM(vote_value) FROM {$votes_table} WHERE voting_list_id = %d AND voting_item_id = %d",
+                $list_id,
+                $item_id
+            ));
+            
+            $results[$item_id] = (int) $score;
+        }
+
+        // Determine winner
+        arsort($results);
+        $sorted_items = array_keys($results);
+        $first_score = $results[$sorted_items[0]];
+        $second_score = $results[$sorted_items[1]];
+
+        $tie_breaker_used = false;
+        $winner_id = $sorted_items[0];
+
+        // TIE-BREAKER LOGIC
+        if ($first_score === $second_score) {
+            // Use RAND() for tie-breaker
+            $winner_id = $sorted_items[rand(0, 1)];
+            $tie_breaker_used = true;
+        }
+
+        // Mark match as completed
+        update_post_meta($list_id, '_yuv_match_completed', true);
+        update_post_meta($list_id, '_yuv_winner_id', $winner_id);
+        update_post_meta($list_id, '_yuv_tie_breaker_used', $tie_breaker_used);
+        update_post_meta($list_id, '_yuv_final_scores', $results);
+
+        // Get next match
+        $next_match_id = get_post_meta($list_id, '_yuv_next_match', true);
+        
+        if (!$next_match_id) {
+            // This is the final
+            return [
+                'success' => true,
+                'list_id' => $list_id,
+                'winner_id' => $winner_id,
+                'winner_name' => get_the_title($winner_id),
+                'tie_breaker' => $tie_breaker_used,
+                'stage' => 'final',
+                'message' => 'Tournament completed! Winner: ' . get_the_title($winner_id),
+            ];
+        }
+
+        // Clone winner to next match
+        $next_items = get_post_meta($next_match_id, '_voting_items', true) ?: [];
+        
+        // Create new voting item for next round
+        $winner_data = get_post($winner_id);
+        $winner_image = get_post_meta($winner_id, '_custom_image_url', true);
+
+        $new_item_id = wp_insert_post([
+            'post_type' => 'voting_items',
+            'post_title' => $winner_data->post_title,
+            'post_status' => 'publish',
+        ]);
+
+        if ($winner_image) {
+            update_post_meta($new_item_id, '_custom_image_url', $winner_image);
+        }
+
+        // Add to next match relation
+        $wpdb->insert(
+            $wpdb->prefix . 'voting_list_item_relations',
+            [
+                'voting_list_id' => $next_match_id,
+                'voting_item_id' => $new_item_id,
+                'custom_image_url' => $winner_image,
+            ]
+        );
+
+        $next_items[] = $new_item_id;
+        update_post_meta($next_match_id, '_voting_items', $next_items);
+
+        // If next match now has 2 items, publish it
+        if (count($next_items) === 2) {
+            wp_update_post([
+                'ID' => $next_match_id,
+                'post_status' => 'publish',
+            ]);
+        }
+
+        return [
+            'success' => true,
+            'list_id' => $list_id,
+            'winner_id' => $winner_id,
+            'winner_name' => get_the_title($winner_id),
+            'tie_breaker' => $tie_breaker_used,
+            'next_match_id' => $next_match_id,
+            'stage' => get_post_meta($list_id, '_yuv_stage', true),
+            'message' => get_the_title($winner_id) . ' advances to next round',
+        ];
+    }
+}
