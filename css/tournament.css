@@ -533,6 +533,45 @@
   font-weight: 500;
 }
 
+/* ==========================================================================
+   BRACKET CTA
+   ========================================================================== */
+
+.yuv-bracket-cta {
+  padding: 30px 40px;
+  background: linear-gradient(135deg, rgba(67, 85, 164, 0.3) 0%, rgba(67, 85, 164, 0.1) 100%);
+  border-top: 2px solid rgba(254, 101, 85, 0.3);
+  text-align: center;
+}
+
+.yuv-completion-message {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 20px;
+}
+
+.yuv-view-bracket-btn {
+  display: inline-block;
+  padding: 16px 40px;
+  background: linear-gradient(135deg, #4355a4 0%, #5568c4 100%);
+  color: #fff;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 800;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 6px 20px rgba(67, 85, 164, 0.4);
+}
+
+.yuv-view-bracket-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(67, 85, 164, 0.6);
+  background: linear-gradient(135deg, #5568c4 0%, #4355a4 100%);
+}
+
 /* Legacy support for old class names */
 .yuv-next-matches-panel {
   padding: 24px 40px;

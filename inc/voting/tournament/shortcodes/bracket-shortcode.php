@@ -244,58 +244,45 @@ function yuv_active_duel_shortcode($atts) {
     // Find currently active match
     $current_time = current_time('timestamp');
     
-    // Debug logging
-    error_log('=== Active Duel Debug ===');
-    error_log('Current timestamp: ' . $current_time);
-    error_log('Current datetime: ' . date('Y-m-d H:i:s', $current_time));
-    error_log('WordPress timezone: ' . get_option('timezone_string'));
-    error_log('WordPress GMT offset: ' . get_option('gmt_offset'));
+    // Find active match - prioritize matches user hasn't voted in
+    $user_id = get_current_user_id();
     
-    // Check tournament 32883 specifically
-    $check_tournament = $wpdb->get_results(
-        "SELECT p.ID, p.post_title, p.post_status
-        FROM {$wpdb->posts} p
-        WHERE p.post_type = 'yuv_tournament' AND p.ID = 32883"
-    );
-    error_log('Tournament 32883: ' . print_r($check_tournament, true));
+    if ($user_id > 0) {
+        // For logged-in users, prioritize matches they haven't voted in
+        $active_match = $wpdb->get_var($wpdb->prepare(
+            "SELECT p.ID 
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_match_completed'
+            INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_end_time'
+            LEFT JOIN {$wpdb->prefix}voting_list_votes v ON p.ID = v.voting_list_id AND v.user_id = %d
+            WHERE p.post_type = 'voting_list'
+            AND p.post_status = 'publish'
+            AND (pm1.meta_value = '0' OR pm1.meta_value = '')
+            AND pm2.meta_value > %d
+            ORDER BY 
+                CASE WHEN v.id IS NULL THEN 0 ELSE 1 END,
+                pm2.meta_value ASC
+            LIMIT 1",
+            $user_id,
+            $current_time
+        ));
+    } else {
+        // For guests, just get earliest active match
+        $active_match = $wpdb->get_var($wpdb->prepare(
+            "SELECT p.ID 
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_match_completed'
+            INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_end_time'
+            WHERE p.post_type = 'voting_list'
+            AND p.post_status = 'publish'
+            AND (pm1.meta_value = '0' OR pm1.meta_value = '')
+            AND pm2.meta_value > %d
+            ORDER BY pm2.meta_value ASC
+            LIMIT 1",
+            $current_time
+        ));
+    }
     
-    // Check what matches belong to tournament 32883
-    $matches_for_32883 = $wpdb->get_results(
-        "SELECT p.ID, p.post_title, pm.meta_value as tournament_id
-        FROM {$wpdb->posts} p
-        INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_yuv_tournament_id'
-        WHERE p.post_type = 'voting_list' AND pm.meta_value = '32883'"
-    );
-    error_log('Matches for tournament 32883: ' . print_r($matches_for_32883, true));
-    
-    $active_match = $wpdb->get_var($wpdb->prepare(
-        "SELECT p.ID 
-        FROM {$wpdb->posts} p
-        INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_match_completed'
-        INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_end_time'
-        WHERE p.post_type = 'voting_list'
-        AND p.post_status = 'publish'
-        AND (pm1.meta_value = '0' OR pm1.meta_value = '')
-        AND pm2.meta_value > %d
-        ORDER BY pm2.meta_value ASC
-        LIMIT 1",
-        $current_time
-    ));
-    
-    error_log('Active match ID: ' . ($active_match ?: 'NONE'));
-    error_log('Last SQL: ' . $wpdb->last_query);
-    
-    // Check all tournament matches for debugging
-    $all_matches = $wpdb->get_results(
-        "SELECT p.ID, p.post_title, pm1.meta_value as completed, pm2.meta_value as end_time
-        FROM {$wpdb->posts} p
-        LEFT JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_yuv_match_completed'
-        LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_yuv_end_time'
-        LEFT JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_is_tournament_match'
-        WHERE p.post_type = 'voting_list' AND pm3.meta_value = '1'"
-    );
-    error_log('All tournament matches: ' . print_r($all_matches, true));
-
     if (!$active_match) {
         return '<div class="yuv-no-duel">
             <div class="yuv-no-duel-icon">⚔️</div>
@@ -308,14 +295,9 @@ function yuv_active_duel_shortcode($atts) {
     $match_id = $active_match;
     $tournament_id = get_post_meta($match_id, '_yuv_tournament_id', true);
     
-    error_log('Match ID: ' . $match_id);
-    error_log('Tournament ID from meta: ' . $tournament_id);
-    
     // If tournament doesn't exist, try to find any active tournament and update the match
     $tournament_exists = get_post_status($tournament_id);
     if (!$tournament_exists || $tournament_exists === false) {
-        error_log('Tournament ' . $tournament_id . ' does not exist');
-        
         // Find any active tournament
         $active_tournament = $wpdb->get_var(
             "SELECT ID FROM {$wpdb->posts} 
@@ -326,13 +308,10 @@ function yuv_active_duel_shortcode($atts) {
         );
         
         if ($active_tournament) {
-            error_log('Found active tournament: ' . $active_tournament);
             // Update this match to point to the active tournament
             update_post_meta($match_id, '_yuv_tournament_id', $active_tournament);
             $tournament_id = $active_tournament;
-            error_log('Updated match ' . $match_id . ' to tournament ' . $active_tournament);
         } else {
-            error_log('No active tournament found - returning no duel message');
             return '<div class="yuv-no-duel">
                 <div class="yuv-no-duel-icon">⚔️</div>
                 <h3>Trenutno nema aktivnih duela</h3>
@@ -341,21 +320,13 @@ function yuv_active_duel_shortcode($atts) {
         }
     }
     
-    error_log('Using tournament: ' . $tournament_id);
-    
     $match_title = get_the_title($match_id);
     $stage = get_post_meta($match_id, '_yuv_stage', true);
     $match_number = get_post_meta($match_id, '_yuv_match_number', true);
     $end_time = (int) get_post_meta($match_id, '_yuv_end_time', true);
     $items = get_post_meta($match_id, '_voting_items', true) ?: [];
-    
-    error_log('Match title: ' . $match_title);
-    error_log('Stage: ' . $stage);
-    error_log('Items count: ' . count($items));
-    error_log('Items: ' . print_r($items, true));
 
     // Check if user voted
-    $user_id = get_current_user_id();
     $has_voted = false;
     if ($user_id > 0) {
         $votes_table = $wpdb->prefix . 'voting_list_votes';
@@ -469,6 +440,9 @@ function yuv_active_duel_shortcode($atts) {
     // Get tournament title
     $tournament_title = get_the_title($tournament_id);
     
+    // Check if user voted in all matches of this stage
+    $all_stage_votes_complete = ($user_votes_in_stage >= $total_stage_matches);
+    
     ob_start();
     ?>
     
@@ -476,7 +450,8 @@ function yuv_active_duel_shortcode($atts) {
          data-tournament-id="<?php echo esc_attr($tournament_id); ?>"
          data-match-id="<?php echo esc_attr($match_id); ?>"
          data-user-voted="<?php echo $has_voted ? 'true' : 'false'; ?>"
-         data-end-time="<?php echo esc_attr($end_time); ?>">
+         data-end-time="<?php echo esc_attr($end_time); ?>"
+         data-all-votes-complete="<?php echo $all_stage_votes_complete ? 'true' : 'false'; ?>">
         
         <!-- Arena Header -->
         <div class="yuv-arena-header">
@@ -658,6 +633,16 @@ function yuv_active_duel_shortcode($atts) {
                 </div>
             </div>
         <?php endif; ?>
+        
+        <!-- View Bracket Button (shown after voting in all stage matches) -->
+        <?php if ($all_stage_votes_complete): ?>
+            <div class="yuv-bracket-cta">
+                <p class="yuv-completion-message">🎉 Završili ste glasanje u svim mečevima ove faze!</p>
+                <a href="#bracket-results" class="yuv-view-bracket-btn" onclick="document.getElementById('bracket-results').scrollIntoView({behavior: 'smooth'}); return false;">
+                    📊 Pogledaj Trenutni Bracket
+                </a>
+            </div>
+        <?php endif; ?>
 
         <!-- Vote Confirmation Toast -->
         <div id="yuv-vote-toast" class="yuv-vote-toast" style="display: none;">
@@ -666,6 +651,14 @@ function yuv_active_duel_shortcode($atts) {
         </div>
 
     </div>
+    
+    <!-- Bracket Visualization (if user completed all votes in stage) -->
+    <?php if ($all_stage_votes_complete): ?>
+        <div id="bracket-results" style="margin-top: 40px;">
+            <h3 style="text-align: center; color: #4355a4; margin-bottom: 20px;">📊 Trenutni Bracket</h3>
+            <?php echo do_shortcode('[yuv_auto_bracket tournament_id="' . $tournament_id . '"]'); ?>
+        </div>
+    <?php endif; ?>
 
     <?php
     return ob_get_clean();

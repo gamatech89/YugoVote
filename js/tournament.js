@@ -52,13 +52,6 @@ jQuery(document).ready(function ($) {
     const btn = $(this);
     const itemId = btn.data("item-id");
 
-    // Debug logging
-    console.log("Vote button clicked");
-    console.log("Match ID:", matchId);
-    console.log("Item ID:", itemId);
-    console.log("Nonce:", yuvTournamentData.nonce);
-    console.log("AJAX URL:", yuvTournamentData.ajaxurl);
-
     // Disable all vote buttons
     $(".yuv-vote-btn").prop("disabled", true);
     btn.html(
@@ -99,9 +92,7 @@ jQuery(document).ready(function ($) {
         }
       },
       error: function (xhr, status, error) {
-        console.error("AJAX Error:", status, error);
-        console.error("Response:", xhr.responseText);
-        alert("Greška pri glasanju. Proveri konzolu za više informacija.");
+        alert("Greška pri glasanju. Pokušajte ponovo.");
         $(".yuv-vote-btn").prop("disabled", false);
         btn.html(
           '<span class="yuv-vote-icon">⚡</span><span class="yuv-vote-text">GLASAJ</span>'
