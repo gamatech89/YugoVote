@@ -86,58 +86,153 @@ add_shortcode('yuv_auto_bracket', 'yuv_auto_bracket_shortcode');
 /**
  * Active Tournament Shortcode (for home page)
  * Displays the currently active tournament
+ * Safe for use in Elementor - doesn't rely on global $post
  */
 function yuv_active_tournament_shortcode($atts) {
-    // Query for active tournaments (published, bracket created, not completed)
-    $args = array(
-        'post_type' => 'yuv_tournament',
-        'post_status' => 'publish',
-        'posts_per_page' => 1,
-        'meta_query' => array(
-            array(
-                'key' => '_yuv_bracket_created',
-                'value' => '1',
-                'compare' => '='
-            )
-        ),
-        'orderby' => 'date',
-        'order' => 'DESC'
-    );
-
-    $query = new WP_Query($args);
-
-    if (!$query->have_posts()) {
-        return '<div class="yuv-no-tournament"><p>Trenutno nema aktivnih turnira.</p></div>';
-    }
-
-    $tournament = $query->posts[0];
-    $tournament_id = $tournament->ID;
+    // Save and clear global post to avoid conflicts
+    global $post;
+    $original_post = $post;
     
-    // Check if tournament is actually still active (has uncompleted matches)
-    $bracket_lists = get_post_meta($tournament_id, '_yuv_bracket_lists', true);
-    $winner_id = get_post_meta($tournament_id, '_yuv_winner_id', true);
-    
-    if ($winner_id) {
-        return '<div class="yuv-no-tournament"><p>Trenutno nema aktivnih turnira.</p></div>';
-    }
+    try {
+        // Query for active tournaments (published, bracket created, not completed)
+        $args = array(
+            'post_type' => 'yuv_tournament',
+            'post_status' => 'publish',
+            'posts_per_page' => 1,
+            'meta_query' => array(
+                array(
+                    'key' => '_yuv_bracket_created',
+                    'value' => '1',
+                    'compare' => '='
+                )
+            ),
+            'orderby' => 'date',
+            'order' => 'DESC'
+        );
 
+        $query = new WP_Query($args);
+
+        if (!$query->have_posts()) {
+            wp_reset_postdata();
+            $post = $original_post; // Restore original post
+            return '<div class="yuv-no-tournament"><p>Trenutno nema aktivnih turnira.</p></div>';
+        }
+
+        $tournament = $query->posts[0];
+        $tournament_id = $tournament->ID;
+        
+        // Check if tournament is actually still active (has uncompleted matches)
+        $bracket_lists = get_post_meta($tournament_id, '_yuv_bracket_lists', true);
+        $winner_id = get_post_meta($tournament_id, '_yuv_winner_id', true);
+        
+        wp_reset_postdata();
+        $post = $original_post; // Restore original post
+        
+        if ($winner_id) {
+            return '<div class="yuv-no-tournament"><p>Trenutno nema aktivnih turnira.</p></div>';
+        }
+
+        // Build output without relying on global post context
+        ob_start();
+        ?>
+        <div class="yuv-active-tournament-wrapper">
+            <div class="yuv-tournament-header">
+                <h2 class="yuv-tournament-title"><?php echo esc_html($tournament->post_title); ?></h2>
+                <?php if ($tournament->post_content): ?>
+                    <div class="yuv-tournament-description">
+                        <?php echo wpautop($tournament->post_content); ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+            
+            <?php 
+            // Directly render bracket without shortcode to avoid context issues
+            if (!empty($bracket_lists)) {
+                echo yuv_render_tournament_bracket($tournament_id, $bracket_lists);
+            }
+            ?>
+        </div>
+        <style>
+            .yuv-active-tournament-wrapper { margin: 40px 0; }
+            .yuv-tournament-header { text-align: center; margin-bottom: 40px; }
+            .yuv-tournament-title { font-size: 32px; font-weight: 700; margin-bottom: 15px; }
+            .yuv-tournament-description { font-size: 16px; color: #666; max-width: 800px; margin: 0 auto; }
+            .yuv-no-tournament { text-align: center; padding: 60px 20px; background: #f5f5f5; border-radius: 12px; }
+            .yuv-no-tournament p { font-size: 18px; color: #666; margin: 0; }
+        </style>
+        <?php
+        return ob_get_clean();
+    } catch (Exception $e) {
+        $post = $original_post; // Restore original post on error
+        error_log('YUV Active Tournament Error: ' . $e->getMessage());
+        return '<div class="yuv-no-tournament"><p>Greška pri učitavanju turnira.</p></div>';
+    }
+}
+add_shortcode('yuv_active_tournament', 'yuv_active_tournament_shortcode');
+
+/**
+ * Helper function to render bracket HTML
+ */
+function yuv_render_tournament_bracket($tournament_id, $bracket_lists) {
     ob_start();
     ?>
-    <div class="yuv-active-tournament-wrapper">
-        <div class="yuv-tournament-header">
-            <h2 class="yuv-tournament-title"><?php echo esc_html($tournament->post_title); ?></h2>
-            <?php if ($tournament->post_content): ?>
-                <div class="yuv-tournament-description">
-                    <?php echo wpautop($tournament->post_content); ?>
-                </div>
-            <?php endif; ?>
+    <div class="yuv-tournament-bracket">
+        <style>
+            .yuv-tournament-bracket { max-width: 1200px; margin: 40px auto; }
+            .yuv-bracket-round { margin-bottom: 40px; }
+            .yuv-bracket-round h3 { text-align: center; font-size: 24px; margin-bottom: 20px; }
+            .yuv-bracket-matches { display: grid; gap: 20px; }
+            .yuv-bracket-matches.qf { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+            .yuv-bracket-matches.sf { grid-template-columns: repeat(2, 1fr); max-width: 800px; margin: 0 auto; }
+            .yuv-bracket-matches.final { max-width: 400px; margin: 0 auto; }
+            .yuv-match-card { background: white; border: 2px solid #ddd; border-radius: 12px; padding: 20px; transition: all 0.3s; }
+            .yuv-match-card.completed { border-color: #28a745; }
+            .yuv-match-card.active { border-color: #2271b1; box-shadow: 0 4px 12px rgba(34, 113, 177, 0.3); }
+            .yuv-match-card.pending { opacity: 0.6; }
+            .yuv-match-title { font-weight: 700; font-size: 16px; margin-bottom: 15px; text-align: center; }
+            .yuv-match-items { display: flex; flex-direction: column; gap: 12px; }
+            .yuv-match-item { display: flex; align-items: center; gap: 12px; padding: 10px; background: #f9f9f9; border-radius: 8px; }
+            .yuv-match-item.winner { background: #d4edda; border: 2px solid #28a745; }
+            .yuv-match-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 50%; }
+            .yuv-match-item-name { flex: 1; font-weight: 600; }
+            .yuv-match-item-score { font-size: 18px; font-weight: 700; }
+            .yuv-match-status { text-align: center; margin-top: 12px; font-size: 13px; }
+            .yuv-match-status.completed { color: #28a745; }
+            .yuv-match-status.active { color: #2271b1; }
+            .yuv-tie-icon { display: inline-block; margin-left: 5px; font-size: 16px; }
+        </style>
+
+        <!-- Quarterfinals -->
+        <div class="yuv-bracket-round">
+            <h3>⚔️ Četvrtfinale</h3>
+            <div class="yuv-bracket-matches qf">
+                <?php foreach ($bracket_lists['qf'] as $list_id): ?>
+                    <?php echo yuv_render_match_card($list_id); ?>
+                <?php endforeach; ?>
+            </div>
         </div>
-        <?php echo yuv_auto_bracket_shortcode(['id' => $tournament_id]); ?>
+
+        <!-- Semifinals -->
+        <div class="yuv-bracket-round">
+            <h3>🏆 Polufinale</h3>
+            <div class="yuv-bracket-matches sf">
+                <?php foreach ($bracket_lists['sf'] as $list_id): ?>
+                    <?php echo yuv_render_match_card($list_id); ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Final -->
+        <div class="yuv-bracket-round">
+            <h3>👑 FINALE</h3>
+            <div class="yuv-bracket-matches final">
+                <?php echo yuv_render_match_card($bracket_lists['final'][0]); ?>
+            </div>
+        </div>
     </div>
-    <style>
-        .yuv-active-tournament-wrapper { margin: 40px 0; }
-        .yuv-tournament-header { text-align: center; margin-bottom: 40px; }
-        .yuv-tournament-title { font-size: 32px; font-weight: 700; margin-bottom: 15px; }
+    <?php
+    return ob_get_clean();
+}
         .yuv-tournament-description { font-size: 16px; color: #666; max-width: 800px; margin: 0 auto; }
         .yuv-no-tournament { text-align: center; padding: 60px 20px; background: #f5f5f5; border-radius: 12px; }
         .yuv-no-tournament p { font-size: 18px; color: #666; margin: 0; }
@@ -290,6 +385,11 @@ function yuv_render_match_card($list_id) {
     global $wpdb;
 
     $post = get_post($list_id);
+    
+    if (!$post) {
+        return '<div class="yuv-match-card"><p>Meč nije pronađen</p></div>';
+    }
+    
     $completed = get_post_meta($list_id, '_yuv_match_completed', true);
     $winner_id = get_post_meta($list_id, '_yuv_winner_id', true);
     $tie_breaker = get_post_meta($list_id, '_yuv_tie_breaker_used', true);
