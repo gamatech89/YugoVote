@@ -9,16 +9,19 @@ Complete redesign of the tournament voting interface with **random access naviga
 ## Key Features Implemented
 
 ### 1. **Random Access Navigation**
+
 - **Direct Match Links**: Users can access any match directly via `?match_id=123` URL parameter
 - **Auto-Swipe Fallback**: If no `match_id` is provided, automatically shows first unvoted match
 - **Navigation Strip**: Horizontal scrollable strip with clickable thumbnails for all matches
 
 ### 2. **Persistent Results Display**
+
 - **State Tracking**: When user revisits a voted match, shows results instead of vote buttons
 - **Database-Driven**: Queries `voting_list_votes` table to determine if user has voted
 - **CSS State Management**: Uses `.yuv-show-results` class to control visibility
 
 ### 3. **Arena-Style Design**
+
 - **New Header Hierarchy**:
   ```
   Stage Pill → Tournament Name → Match Names
@@ -28,12 +31,14 @@ Complete redesign of the tournament voting interface with **random access naviga
 - **Hover Effects**: Contenders zoom on hover
 
 ### 4. **Result Visualization**
+
 - **Animated Progress Bars**: Horizontal bars at bottom of each contender
 - **Large Percentages**: 48px gold numbers
 - **Vote Counts**: Formatted numbers (e.g., "1,234 glasova")
 - **Winner Highlight**: Gold glow on winning contender's name
 
 ### 5. **Auto-Advance After Voting**
+
 - **Vote Flow**:
   1. User clicks vote button
   2. AJAX sends vote to server
@@ -52,6 +57,7 @@ Complete redesign of the tournament voting interface with **random access naviga
 #### `bracket-shortcode.php`
 
 **Updated `yuv_active_duel_shortcode()`**:
+
 ```php
 // Step 4: RANDOM ACCESS - Check if ?match_id is provided
 $target_match_id = isset($_GET['match_id']) ? (int) $_GET['match_id'] : null;
@@ -66,33 +72,35 @@ if ($target_match_id && in_array($target_match_id, $active_matches, true)) {
 ```
 
 **New `yuv_render_arena()` Function**:
+
 ```php
 function yuv_render_arena($match_id, $tournament_id, $tournament_title, $all_matches, $user_id, $user_ip) {
     // Check if user voted - PERSISTENT STATE
     $has_voted = false;
     $winning_item_id = null;
-    
+
     if ($user_id > 0) {
         $user_vote = $wpdb->get_var($wpdb->prepare(
-            "SELECT voting_item_id FROM {$wpdb->prefix}voting_list_votes 
+            "SELECT voting_item_id FROM {$wpdb->prefix}voting_list_votes
             WHERE voting_list_id = %d AND user_id = %d",
             $match_id, $user_id
         ));
     } else { ... }
-    
+
     if (!empty($user_vote)) {
         $has_voted = true;
         $winning_item_id = (int) $user_vote;
     }
-    
+
     // Add .yuv-show-results class if user voted
     <div class="yuv-arena-wrapper <?php echo $has_voted ? 'yuv-show-results' : ''; ?>">
     ...
 ```
 
 **Navigation Strip with Links**:
+
 ```php
-<a href="<?php echo esc_url(add_query_arg('match_id', $strip_match_id, get_permalink())); ?>" 
+<a href="<?php echo esc_url(add_query_arg('match_id', $strip_match_id, get_permalink())); ?>"
    class="yuv-nav-item <?php echo $strip_class; ?>">
     <img src="..." class="yuv-nav-img left">
     <span class="yuv-nav-vs">vs</span>
@@ -106,6 +114,7 @@ function yuv_render_arena($match_id, $tournament_id, $tournament_title, $all_mat
 #### `tournament-ajax.php`
 
 **Updated Vote Response**:
+
 ```php
 // Get updated vote counts and percentages for UI update
 $match_items = get_post_meta($match_id, '_voting_items', true);
@@ -143,6 +152,7 @@ wp_send_json_success($response_data);
 #### `tournament.css` (added 433 lines)
 
 **Arena Wrapper**:
+
 ```css
 .yuv-arena-wrapper {
   background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
@@ -154,6 +164,7 @@ wp_send_json_success($response_data);
 ```
 
 **New Header**:
+
 ```css
 .yuv-arena-header-new {
   display: flex;
@@ -174,6 +185,7 @@ wp_send_json_success($response_data);
 ```
 
 **Result State Transitions**:
+
 ```css
 /* Hide vote buttons when results are shown */
 .yuv-show-results .yuv-vote-btn {
@@ -198,6 +210,7 @@ wp_send_json_success($response_data);
 ```
 
 **VS Badge Animation**:
+
 ```css
 .yuv-vs-badge {
   position: absolute;
@@ -214,7 +227,8 @@ wp_send_json_success($response_data);
 }
 
 @keyframes rotate-pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(-50%, -50%) rotate(0deg) scale(1);
   }
   50% {
@@ -224,6 +238,7 @@ wp_send_json_success($response_data);
 ```
 
 **Navigation Strip**:
+
 ```css
 .yuv-nav-strip {
   display: flex;
@@ -262,6 +277,7 @@ wp_send_json_success($response_data);
 #### `tournament.js` (simplified from 155 lines)
 
 **Simplified Vote Handler**:
+
 ```javascript
 $(".yuv-vote-btn").on("click", function (e) {
   e.preventDefault();
@@ -282,46 +298,53 @@ $(".yuv-vote-btn").on("click", function (e) {
       if (response.success) {
         // Add results state class
         arena.addClass("yuv-show-results");
-        
+
         // Mark winner
         contender.addClass("is-winner");
-        
+
         // Update percentages and vote counts from response
         if (response.data.results) {
           const results = response.data.results;
-          
-          $(".yuv-contender").each(function() {
+
+          $(".yuv-contender").each(function () {
             const $cont = $(this);
             const contId = $cont.data("contender-id");
-            const result = results.find(r => r.id == contId);
-            
+            const result = results.find((r) => r.id == contId);
+
             if (result) {
               $cont.find(".yuv-percent").text(result.percent + "%");
-              $cont.find(".yuv-vote-count").text(result.votes.toLocaleString() + " glasova");
+              $cont
+                .find(".yuv-vote-count")
+                .text(result.votes.toLocaleString() + " glasova");
               $cont.find(".yuv-result-bar").css("width", result.percent + "%");
             }
           });
         }
-        
+
         // Show success toast
         showToast("Tvoj glas je zabeležen!");
-        
+
         // Wait 2 seconds, then reload without params (auto-advance)
-        setTimeout(function() {
+        setTimeout(function () {
           window.location.href = window.location.pathname;
         }, 2000);
       }
-    }
+    },
   });
 });
 ```
 
 **Auto-Scroll to Current Match**:
+
 ```javascript
 const currentNavItem = $(".yuv-nav-item.current");
 if (currentNavItem.length) {
   const navStrip = $(".yuv-nav-strip");
-  const scrollLeft = currentNavItem.offset().left - navStrip.offset().left - (navStrip.width() / 2) + (currentNavItem.width() / 2);
+  const scrollLeft =
+    currentNavItem.offset().left -
+    navStrip.offset().left -
+    navStrip.width() / 2 +
+    currentNavItem.width() / 2;
   navStrip.scrollLeft(navStrip.scrollLeft() + scrollLeft);
 }
 ```
@@ -363,11 +386,13 @@ if (currentNavItem.length) {
 ## Mobile Responsive Design
 
 ### Desktop (>768px)
+
 - **Layout**: Side-by-side contenders
 - **Min Height**: 500px
 - **Nav Items**: 100px × 60px
 
 ### Mobile (≤768px)
+
 - **Layout**: Stacked contenders (column)
 - **Min Height**: 700px (350px each)
 - **Nav Items**: 80px × 50px
@@ -384,6 +409,7 @@ if (currentNavItem.length) {
 **Lines Removed**: 94
 
 ### Modified Files:
+
 1. `css/tournament.css` (+433 lines)
 2. `inc/voting/tournament/api/tournament-ajax.php` (+27 lines)
 3. `inc/voting/tournament/shortcodes/bracket-shortcode.php` (+131 lines, -94 lines)

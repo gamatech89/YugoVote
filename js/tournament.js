@@ -4,12 +4,31 @@
  */
 
 jQuery(document).ready(function ($) {
-  const arena = $(".yuv-arena-wrapper");
-  if (!arena.length) return;
+  // FIX 1: Read from .yuv-duel-arena which has the data attributes
+  const $duelArena = $(".yuv-duel-arena");
+  if (!$duelArena.length) {
+    console.error("YUV Tournament: .yuv-duel-arena not found");
+    return;
+  }
 
-  const endTime = parseInt(arena.data("end-time"));
-  const matchId = arena.data("match-id");
-  const hasVoted = arena.data("user-voted") === "true";
+  const matchId = $duelArena.data("match-id");
+  const tournamentId = $duelArena.data("tournament-id");
+  const endTime = parseInt($duelArena.data("end-time"));
+  const $arena = $(".yuv-arena-wrapper");
+  const hasVoted = $arena.hasClass("yuv-show-results");
+  
+  // FIX 1: Debug logging
+  console.log("YUV Tournament Init:", {
+    matchId: matchId,
+    tournamentId: tournamentId,
+    endTime: endTime,
+    hasVoted: hasVoted
+  });
+  
+  if (!matchId) {
+    console.error("YUV Tournament: match_id missing from .yuv-duel-arena!");
+    return;
+  }
 
   // ========================================================================
   // COUNTDOWN TIMER
@@ -59,49 +78,65 @@ jQuery(document).ready(function ($) {
       '<span class="yuv-vote-icon">⏳</span><span class="yuv-vote-text">GLASANJE...</span>'
     );
 
+    // FIX 1: Prepare and log payload
+    const payload = {
+      action: "yuv_cast_tournament_vote",
+      _ajax_nonce: yuvTournamentData.nonce,
+      match_id: matchId,
+      item_id: itemId,
+    };
+    
+    console.log("YUV Tournament: Sending vote payload:", payload);
+    
+    if (!payload.match_id || !payload.item_id) {
+      console.error("YUV Tournament: Invalid payload!", payload);
+      alert("Greška: Nevažeći podaci. Osvežite stranicu.");
+      $(".yuv-vote-btn").prop("disabled", false);
+      btn.html('<span class="yuv-vote-icon">⚡</span><span class="yuv-vote-text">GLASAJ</span>');
+      return;
+    }
+
     // Send AJAX vote
     $.ajax({
       url: yuvTournamentData.ajaxurl,
       type: "POST",
-      data: {
-        action: "yuv_cast_tournament_vote",
-        _ajax_nonce: yuvTournamentData.nonce,
-        match_id: matchId,
-        item_id: itemId,
-      },
+      data: payload,
       success: function (response) {
         if (response.success) {
           // Add results state class
           arena.addClass("yuv-show-results");
-          
+
           // Mark winner
           contender.addClass("is-winner");
-          
+
           // Update percentages and vote counts from response
           if (response.data.results) {
             const results = response.data.results;
-            
-            $(".yuv-contender").each(function() {
+
+            $(".yuv-contender").each(function () {
               const $cont = $(this);
               const contId = $cont.data("contender-id");
-              const result = results.find(r => r.id == contId);
-              
+              const result = results.find((r) => r.id == contId);
+
               if (result) {
                 $cont.find(".yuv-percent").text(result.percent + "%");
-                $cont.find(".yuv-vote-count").text(result.votes.toLocaleString() + " glasova");
-                $cont.find(".yuv-result-bar").css("width", result.percent + "%");
+                $cont
+                  .find(".yuv-vote-count")
+                  .text(result.votes.toLocaleString() + " glasova");
+                $cont
+                  .find(".yuv-result-bar")
+                  .css("width", result.percent + "%");
               }
             });
           }
-          
+
           // Show success toast
           showToast("Tvoj glas je zabeležen!");
-          
+
           // Wait 2 seconds, then reload without params (auto-advance)
-          setTimeout(function() {
+          setTimeout(function () {
             window.location.href = window.location.pathname;
           }, 2000);
-          
         } else {
           alert(
             response.data.message || "Greška pri glasanju. Pokušaj ponovo."
@@ -113,6 +148,11 @@ jQuery(document).ready(function ($) {
         }
       },
       error: function (xhr, status, error) {
+        console.error("YUV Tournament: AJAX error:", {
+          status: status,
+          error: error,
+          response: xhr.responseText
+        });
         alert("Greška pri glasanju. Pokušajte ponovo.");
         $(".yuv-vote-btn").prop("disabled", false);
         btn.html(
@@ -144,11 +184,15 @@ jQuery(document).ready(function ($) {
   // ========================================================================
   // AUTO-SCROLL TO CURRENT MATCH IN NAV STRIP
   // ========================================================================
-  
+
   const currentNavItem = $(".yuv-nav-item.current");
   if (currentNavItem.length) {
     const navStrip = $(".yuv-nav-strip");
-    const scrollLeft = currentNavItem.offset().left - navStrip.offset().left - (navStrip.width() / 2) + (currentNavItem.width() / 2);
+    const scrollLeft =
+      currentNavItem.offset().left -
+      navStrip.offset().left -
+      navStrip.width() / 2 +
+      currentNavItem.width() / 2;
     navStrip.scrollLeft(navStrip.scrollLeft() + scrollLeft);
   }
 

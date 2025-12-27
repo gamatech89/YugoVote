@@ -420,12 +420,8 @@ function yuv_render_arena($match_id, $tournament_id, $tournament_title, $all_mat
     ob_start();
     ?>
     
-    <div class="yuv-arena-wrapper <?php echo $has_voted ? 'yuv-show-results' : ''; ?>" 
-         data-tournament-id="<?php echo esc_attr($tournament_id); ?>"
-         data-match-id="<?php echo esc_attr($match_id); ?>"
-         data-stage="<?php echo esc_attr($stage); ?>"
-         data-user-voted="<?php echo $has_voted ? 'true' : 'false'; ?>"
-         data-end-time="<?php echo esc_attr($end_time); ?>">
+    <!-- FIX 3: Added id="yuv-arena" anchor for scroll positioning -->
+    <div id="yuv-arena" class="yuv-arena-wrapper <?php echo $has_voted ? 'yuv-show-results' : ''; ?>">
         
         <!-- Arena Header NEW -->
         <div class="yuv-arena-header-new">
@@ -438,8 +434,11 @@ function yuv_render_arena($match_id, $tournament_id, $tournament_title, $all_mat
             </h3>
         </div>
 
-        <!-- Duel Arena (Split Screen) -->
-        <div class="yuv-duel-arena">
+        <!-- Duel Arena (Split Screen) - FIX 1: Added data attributes for JS -->
+        <div class="yuv-duel-arena"
+             data-match-id="<?php echo esc_attr($match_id); ?>"
+             data-tournament-id="<?php echo esc_attr($tournament_id); ?>"
+             data-end-time="<?php echo esc_attr($end_time); ?>">
             
             <!-- Left Contender -->
             <?php if (!empty($contenders[0])): $left = $contenders[0]; ?>
@@ -541,8 +540,8 @@ function yuv_render_arena($match_id, $tournament_id, $tournament_title, $all_mat
                     $img2 = get_post_meta($strip_items[1], '_custom_image_url', true) ?: get_the_post_thumbnail_url($strip_items[1], 'thumbnail');
                 }
                 
-                // Build URL with match_id param
-                $match_url = add_query_arg('match_id', $strip_match_id, get_permalink());
+                // FIX 3: Build URL with match_id param AND #yuv-arena anchor
+                $match_url = add_query_arg('match_id', $strip_match_id, get_permalink()) . '#yuv-arena';
             ?>
                 <a href="<?php echo esc_url($match_url); ?>" class="yuv-nav-item <?php echo esc_attr($strip_class); ?>">
                     <?php if ($img1): ?>
