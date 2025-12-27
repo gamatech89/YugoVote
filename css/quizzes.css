@@ -69,6 +69,7 @@
   gap: 10px;
 }
 
+/* ✅ STEP 3: Fix invisible controls - Force dark color */
 .cs-close-button,
 .cs-mute-button {
   width: 36px;
@@ -77,7 +78,7 @@
   background: rgba(0, 0, 0, 0.05);
   border-radius: 8px;
   font-size: 18px;
-  color: #374151;
+  color: #1f2937; /* ✅ Dark grey/black for visibility */
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -88,7 +89,8 @@
 .cs-close-button:hover,
 .cs-mute-button:hover {
   background: rgba(0, 0, 0, 0.1);
-  color: var(--quiz-primary-color, #6a0dad);
+  color: var(--quiz-primary-color, #6a0dad); /* ✅ Primary color on hover */
+  transform: scale(1.05);
 }
 
 .cs-quiz-container {
@@ -176,9 +178,11 @@
   color: #555;
 }
 
-.ygv-quiz-meta-item svg {
+.ygv-quiz-meta-item svg,
+.ygv-quiz-meta-item i {
   width: 18px;
   height: 18px;
+  font-size: 18px;
   color: #888;
 }
 
@@ -207,9 +211,11 @@
   transform: translateY(0);
 }
 
-.ygv-btn-primary svg {
+.ygv-btn-primary svg,
+.ygv-btn-primary i {
   width: 20px;
   height: 20px;
+  font-size: 20px;
 }
 
 /* ========================================
@@ -309,7 +315,8 @@
 
 .cs-answer-btn:hover:not(:disabled) {
   border-color: var(--quiz-primary-color, #6a0dad);
-  background: rgba(106, 13, 173, 0.05);
+  background: var(--quiz-primary-color, #6a0dad) !important;
+  color: #ffffff !important;
 }
 
 .cs-answer-btn.selected {
@@ -406,6 +413,37 @@
   margin-bottom: 20px;
 }
 
+.yuv-result-icon {
+  font-size: 4rem;
+  animation: iconPop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.yuv-result-icon.success {
+  color: #28a745;
+}
+
+.yuv-result-icon.fail {
+  color: #dc3545;
+}
+
+.yuv-result-icon.neutral {
+  color: var(--quiz-primary-color, #6a0dad);
+}
+
+@keyframes iconPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .ygv-quiz-summary h2 {
   font-size: 28px;
   color: #1a1a1a;
@@ -487,8 +525,10 @@
 }
 
 .ygv-login-icon {
-  font-size: 80px;
+  font-size: 5rem;
   margin-bottom: 20px;
+  color: var(--quiz-primary-color, #6a0dad);
+  animation: iconPop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .ygv-login-prompt h2 {

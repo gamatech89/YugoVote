@@ -44,21 +44,11 @@ const Templates = {
         
         <div class="ygv-quiz-meta">
           <div class="ygv-quiz-meta-item">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="8" y1="6" x2="21" y2="6"></line>
-              <line x1="8" y1="12" x2="21" y2="12"></line>
-              <line x1="8" y1="18" x2="21" y2="18"></line>
-              <line x1="3" y1="6" x2="3.01" y2="6"></line>
-              <line x1="3" y1="12" x2="3.01" y2="12"></line>
-              <line x1="3" y1="18" x2="3.01" y2="18"></line>
-            </svg>
+            <i class="ri-file-list-3-line"></i>
             <span>${quiz.num_questions} pitanja</span>
           </div>
           <div class="ygv-quiz-meta-item">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
+            <i class="ri-time-line"></i>
             <span>${quiz.time_per_question}s po pitanju</span>
           </div>
           ${
@@ -123,26 +113,36 @@ const Templates = {
     </div>
   `,
 
-  summaryScreen: (score, total, isGuest = false) => `
+  summaryScreen: (score, total, isGuest = false) => {
+    const percent = (score / total) * 100;
+    let icon, iconClass, title;
+
+    if (percent >= 70) {
+      icon = "ri-trophy-line";
+      iconClass = "success";
+      title = "Odličan rezultat!";
+    } else if (percent >= 40) {
+      icon = "ri-thumb-up-line";
+      iconClass = "neutral";
+      title = "Dobar pokušaj!";
+    } else {
+      icon = "ri-emotion-unhappy-line";
+      iconClass = "fail";
+      title = "Probaj ponovo!";
+    }
+
+    return `
     <div class="ygv-quiz-summary fade-in">
       <div class="ygv-summary-icon">
-        ${score >= total * 0.7 ? "🎉" : score >= total * 0.4 ? "👍" : "💪"}
+        <i class="${icon} yuv-result-icon ${iconClass}"></i>
       </div>
-      <h2>${
-        score >= total * 0.7
-          ? "Odličan rezultat!"
-          : score >= total * 0.4
-          ? "Dobar pokušaj!"
-          : "Probaj ponovo!"
-      }</h2>
+      <h2>${title}</h2>
       <div class="ygv-summary-score">
         <span class="ygv-score-number">${score}</span>
         <span class="ygv-score-divider">/</span>
         <span class="ygv-score-total">${total}</span>
       </div>
-      <p class="ygv-summary-percent">${Math.round(
-        (score / total) * 100
-      )}% tačnih odgovora</p>
+      <p class="ygv-summary-percent">${Math.round(percent)}% tačnih odgovora</p>
       
       ${
         isGuest
@@ -159,11 +159,14 @@ const Templates = {
         Pokušaj ponovo
       </button>
     </div>
-  `,
+  `;
+  },
 
   loginPrompt: () => `
     <div class="ygv-login-prompt fade-in">
-      <div class="ygv-login-icon">🔒</div>
+      <div class="ygv-login-icon">
+        <i class="ri-lock-2-line yuv-result-icon" style="color: var(--quiz-primary-color);"></i>
+      </div>
       <h2>Za ovaj kviz je potrebna prijava</h2>
       <p>Prijavite se da biste igrali i osvajali bodove.</p>
       <div class="ygv-login-buttons">
