@@ -245,6 +245,8 @@ jQuery(document).ready(function ($) {
     // Remove old handlers
     $(document).off("click", ".yuv-nav-item");
     
+    console.log("YUV Tournament: Binding navigation to", $(".yuv-nav-item").length, "items");
+    
     $(document).on("click", ".yuv-nav-item", function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -254,8 +256,10 @@ jQuery(document).ready(function ($) {
       // Get match ID from data attribute (not href!)
       const matchId = $item.data("match-id");
 
+      console.log("YUV Tournament: Nav item clicked, match ID:", matchId);
+
       if (!matchId) {
-        console.error("No match ID found on nav item");
+        console.error("No match ID found on nav item", $item);
         return;
       }
 
