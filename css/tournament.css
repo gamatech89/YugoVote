@@ -2,6 +2,8 @@
  * Tournament Duel Arena Styles
  * Hero Battle Interface for Active Tournament Matches
  * Brand Colors: Primary #4355A4 (Indigo), Secondary #FE6555 (Coral)
+ * 
+ * FIXED: Button alignment, removed green shadows, added timer, vote counts, navigation
  */
 
 /* ==========================================================================
@@ -795,12 +797,32 @@
   margin: 0;
 }
 
+/* Timer Badge - FIX 3: Countdown timer */
+.yuv-timer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(254, 101, 85, 0.2);
+  border: 1px solid rgba(254, 101, 85, 0.4);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fe6555;
+  font-family: 'Courier New', monospace;
+}
+
+.yuv-timer-badge span {
+  font-weight: 700;
+  color: #fff;
+}
+
 /* Duel Arena (Split Screen) - MODERN NETFLIX-STYLE CARDS */
 .yuv-duel-arena {
   position: relative;
   display: flex;
-  gap: 48px;
-  padding: 40px;
+  gap: 64px;
+  padding: 48px;
   min-height: 600px;
   background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
   align-items: center;
@@ -820,11 +842,12 @@
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* FIX 2: Removed green shadows, use brand blue */
 .yuv-contender:hover {
-  transform: translateY(-8px);
+  transform: translateY(-6px);
   border-color: rgba(67, 85, 164, 0.6);
-  box-shadow: 0 16px 48px rgba(67, 85, 164, 0.3),
-    0 0 80px rgba(67, 85, 164, 0.1);
+  box-shadow: 0 12px 40px rgba(67, 85, 164, 0.25),
+    0 0 60px rgba(67, 85, 164, 0.08);
 }
 
 /* IMAGE: Top Section with 16:9 Aspect Ratio */
@@ -862,17 +885,16 @@
 .yuv-contender:hover .yuv-img-overlay {
   opacity: 0.8;
 }
-
-/* INFO AREA: Bottom Section - Clean Modern Design */
+FIX 1: Proper Flexbox Alignment */
 .yuv-contender-info {
   position: relative;
   width: 100%;
   padding: 28px 24px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: flex-end;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   text-align: center;
   background: linear-gradient(
     180deg,
@@ -880,9 +902,11 @@
     rgba(15, 23, 42, 0.95) 100%
   );
   backdrop-filter: blur(10px);
+  min-height: 180px;
 }
 
 .yuv-contender-name {
+  font-size: 26name {
   font-size: 28px;
   font-weight: 900;
   color: #fff;
@@ -903,38 +927,36 @@
   font-weight: 400;
   min-height: 40px;
 }
-
-/* VOTE BUTTON - Modern, Clean Design */
+FIX 1: Add margin-top & remove animations */
 .yuv-vote-btn {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 16px 40px;
-  font-size: 16px;
+  padding: 14px 36px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: #fff;
   background: linear-gradient(135deg, #fe6555 0%, #ff4d3c 100%);
-  border: 2px solid transparent;
+  border: none;
   border-radius: 12px;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(254, 101, 85, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-top: auto;
+  margin-top: 20px;
   position: relative !important;
-  animation: none !important;
   z-index: 5 !important;
   width: 100%;
+  max-width: 26
   max-width: 280px;
 }
 
 .yuv-vote-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(254, 101, 85, 0.5);
+  box-shadow: 0 6px 20px rgba(254, 101, 85, 0.5);
   background: linear-gradient(135deg, #ff5745 0%, #fe6555 100%);
-  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .yuv-vote-btn:active {
@@ -950,25 +972,24 @@
 .yuv-vote-icon {
   font-size: 20px;
   display: inline-flex;
+  align-items18px;
+  display: inline-flex;
   align-items: center;
-  animation: none !important;
 }
 
 .yuv-vote-icon img {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: block;
 }
 
 .yuv-vote-text {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 1px;
 }
 
-/* Result Overlay - Modern Stats Display (NO GOLD TEXT) */
-.yuv-result-overlay {
-  position: absolute;
+/* Result Overlay - FIX 4: Show vote counts
   bottom: 0;
   left: 0;
   width: 100%;
@@ -981,8 +1002,8 @@
   gap: 8px;
   padding: 28px 24px;
   background: linear-gradient(
-    180deg,
-    rgba(30, 41, 59, 0.98) 0%,
+    18012px;
+  padding: 3241, 59, 0.98) 0%,
     rgba(15, 23, 42, 0.98) 100%
   );
   backdrop-filter: blur(16px);
@@ -1004,6 +1025,8 @@
 .yuv-percent {
   font-size: 56px;
   font-weight: 900;
+  color: #fff;2px;
+  font-weight: 900;
   color: #fff;
   text-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   margin: 0;
@@ -1012,9 +1035,7 @@
 }
 
 .yuv-vote-count {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 600;
+  font-size: 15600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   animation: fadeInUp 0.6s ease-out 0.2s both;
@@ -1041,12 +1062,12 @@
 }
 
 /* Winner Indication - BLUE GLOW instead of gold text */
+.yuv-show-results .yuv-contender.*/
 .yuv-show-results .yuv-contender.is-winner {
   border-color: #4355a4;
   border-width: 3px;
   box-shadow: 0 0 40px rgba(67, 85, 164, 0.6), 0 8px 32px rgba(67, 85, 164, 0.4);
-  animation: winnerGlow 2s ease-in-out;
-}
+  animation: winnerGlow 2s ease-in-out infinite
 
 .yuv-show-results .yuv-contender.is-winner .yuv-contender-name {
   color: #fff;
@@ -1070,78 +1091,76 @@
   }
   50% {
     filter: brightness(1.15);
+  }2);
   }
 }
 
-/* VS BADGE - Centered Between Cards with Pulsing Coral Design */
+/* VS BADGE - FIX 2: Proper Z-Index & Positioning */
 .yuv-vs-badge {
   position: absolute !important;
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  z-index: 30;
-  display: flex;
+  z-index: 100 !importantex;
   align-items: center;
   justify-content: center;
-  width: 100px;
-  height: 100px;
+  width: 110px;
+  height: 110px;
   background: linear-gradient(
     135deg,
     rgba(254, 101, 85, 0.95) 0%,
     rgba(255, 77, 60, 0.98) 100%
   );
-  border: 4px solid rgba(255, 255, 255, 0.9);
+  border: 4px solid rgba(255, 255, 255, 0.95);
   border-radius: 50%;
   box-shadow: 
-    0 0 0 8px rgba(254, 101, 85, 0.2),
-    0 0 0 16px rgba(254, 101, 85, 0.1),
-    0 12px 40px rgba(0, 0, 0, 0.5),
-    0 0 80px rgba(254, 101, 85, 0.6);
+    0 0 0 10px rgba(254, 101, 85, 0.15),
+    0 0 0 20px rgba(254, 101, 85, 0.08),
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    0 0 80px rgba(254, 101, 85, 0.5);
   backdrop-filter: blur(10px);
-  animation: vsPulse 2s ease-in-out infinite !important;
+  animation: vsPulse 2.5s ease-in-out infinite !important;
 }
 
 .yuv-vs-badge::before {
   content: '';
   position: absolute;
-  top: -12px;
-  left: -12px;
-  right: -12px;
-  bottom: -12px;
+  top: -14px;
+  left: -14px;
+  right: -14px;
+  bottom: -14px;
   border: 2px solid rgba(254, 101, 85, 0.3);
   border-radius: 50%;
-  animation: vsRipple 2s ease-out infinite;
+  animation: vsRipple 2.5s ease-out infinite;
 }
 
 .yuv-vs-badge span {
-  font-size: 42px;
+  font-size: 44px;
   font-weight: 900;
   color: #fff;
   text-shadow: 
-    0 0 10px rgba(255, 255, 255, 0.5),
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    0 4px 16px rgba(254, 101, 85, 0.4);
+    0 0 12px rgba(255, 255, 255, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 4px 16px rgba(254, 101, 85, 0.5);
   letter-spacing: 2px;
-  animation: none !important;
-  transform: none !important;
 }
 
 @keyframes vsPulse {
   0%, 100% {
     transform: translate(-50%, -50%) scale(1);
     box-shadow: 
-      0 0 0 8px rgba(254, 101, 85, 0.2),
-      0 0 0 16px rgba(254, 101, 85, 0.1),
-      0 12px 40px rgba(0, 0, 0, 0.5),
-      0 0 80px rgba(254, 101, 85, 0.6);
+      0 0 0 10px rgba(254, 101, 85, 0.15),
+      0 0 0 20px rgba(254, 101, 85, 0.08),
+      0 12px 40px rgba(0, 0, 0, 0.6),
+      0 0 80px rgba(254, 101, 85, 0.5);
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.08);
+    transform: translate(-50%, -50%) scale(1.06);
     box-shadow: 
-      0 0 0 12px rgba(254, 101, 85, 0.3),
-      0 0 0 24px rgba(254, 101, 85, 0.15),
-      0 16px 48px rgba(0, 0, 0, 0.6),
-      0 0 100px rgba(254, 101, 85, 0.8);
+      0 0 0 14px rgba(254, 101, 85, 0.2),
+      0 0 0 28px rgba(254, 101, 85, 0.12),
+      0 16px 48px rgba(0, 0, 0, 0.7),
+      0 0 100px rgba(254, 101, 85, 0.7);
   }
 }
 
@@ -1194,6 +1213,8 @@
 
 /* Nav Item - Card Design with Proper Spacing */
 .yuv-nav-item {
+  position: reFIX 5: Clickable thumbnails */
+.yuv-nav-item {
   position: relative;
   flex-shrink: 0;
   width: 140px;
@@ -1215,14 +1236,8 @@
   user-select: none;
 }
 
-.yuv-nav-item * {
-  pointer-events: none;
-}
-
 .yuv-nav-item:hover {
-  transform: translateY(-8px) scale(1.05);
-  border-color: rgba(67, 85, 164, 0.7);
-  box-shadow: 0 12px 32px rgba(67, 85, 164, 0.4);
+  transform: translateY(-6px) scale(1.0464, 0.4);
   background: linear-gradient(
     135deg,
     rgba(67, 85, 164, 0.3) 0%,
@@ -1431,29 +1446,30 @@
     font-size: 22px;
   }
 
+    min-height: 160px;
+  }
+
+  .yuv-contender-name {
+    font-size: 22px;
+  }
+
   .yuv-contender-bio {
     font-size: 13px;
   }
 
   .yuv-vote-btn {
     padding: 12px 28px;
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .yuv-vs-badge {
     top: 50%;
-    width: 80px;
-    height: 80px;
+    width: 90px;
+    height: 90px;
   }
 
   .yuv-vs-badge span {
-    font-size: 36px;
-  }
-
-  .yuv-nav-strip {
-    padding: 16px;
-    gap: 12px;
-  }
+    font-size: 38
 
   .yuv-nav-item {
     width: 120px;

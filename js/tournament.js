@@ -1,6 +1,8 @@
 /**
  * Tournament Arena JavaScript - Seamless AJAX Experience
  * No page reloads, smooth transitions between matches
+ * 
+ * FIXED: Timer countdown, navigation clicks, result display
  */
 
 jQuery(document).ready(function ($) {
@@ -44,7 +46,7 @@ jQuery(document).ready(function ($) {
       $(".yuv-result-overlay").hide();
     }
 
-    // Start countdown timer if not voted
+    // FIX 3: Start countdown timer if not voted
     if (!hasVoted && endTime) {
       startCountdown(endTime);
     }
@@ -60,18 +62,22 @@ jQuery(document).ready(function ($) {
   }
 
   /**
-   * Countdown Timer
+   * FIX 3: Countdown Timer Implementation
    */
   function startCountdown(endTime) {
+    const $timerEl = $("#yuv-duel-timer");
+    
+    if (!$timerEl.length) {
+      return;
+    }
+
     function updateTimer() {
       const now = Math.floor(Date.now() / 1000);
       const remaining = endTime - now;
 
       if (remaining <= 0) {
-        $("#timer-hours").text("00");
-        $("#timer-minutes").text("00");
-        $("#timer-seconds").text("00");
-        $(".yuv-vote-btn").prop("disabled", true).text("VREME ISTEKLO");
+        $timerEl.text("00:00:00");
+        clearInterval(timerInterval);
         return;
       }
 
@@ -79,16 +85,18 @@ jQuery(document).ready(function ($) {
       const minutes = Math.floor((remaining % 3600) / 60);
       const seconds = remaining % 60;
 
-      $("#timer-hours").text(String(hours).padStart(2, "0"));
-      $("#timer-minutes").text(String(minutes).padStart(2, "0"));
-      $("#timer-seconds").text(String(seconds).padStart(2, "0"));
+      $timerEl.text(
+        String(hours).padStart(2, "0") + ":" +
+        String(minutes).padStart(2, "0") + ":" +
+        String(seconds).padStart(2, "0")
+      );
     }
 
     updateTimer();
-    const interval = setInterval(updateTimer, 1000);
+    const timerInterval = setInterval(updateTimer, 1000);
     
     // Store interval ID for cleanup
-    $arenaContainer.data('timer-interval', interval);
+    $arenaContainer.data('timer-interval', timerInterval);
   }
 
   /**
@@ -233,15 +241,15 @@ jQuery(document).ready(function ($) {
         }
       },
       error: function () {
-        alert("Greška pri učitavanju sledećeg meča");
-      },
-    });
-  }
-
-  /**
-   * Bind Navigation Links (thumbnails at bottom)
+     FIX 5: Bind Navigation Links (thumbnails at bottom)
    */
   function bindNavigation() {
+    // Remove old handlers
+    $(document).off("click", ".yuv-nav-item");
+    
+    console.log("YUV Tournament: Binding navigation to", $(".yuv-nav-item").length, "items");
+    
+    // Use event delegation on the nav strip container
     // Remove old handlers
     $(document).off("click", ".yuv-nav-item");
     

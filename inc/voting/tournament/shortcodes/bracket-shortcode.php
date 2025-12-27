@@ -348,6 +348,9 @@ function yuv_render_arena($match_id, $tournament_id, $tournament_title, $all_mat
 
 /**
  * Extracted HTML rendering logic for arena (reusable for AJAX)
+ * FIX 3: Added timer badge
+ * FIX 4: Added vote counts to result overlay
+ * FIX 5: Fixed navigation thumbnails with data-match-id
  */
 function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $all_matches, $user_id, $user_ip) {
     global $wpdb;
@@ -432,7 +435,7 @@ function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $al
     <!-- FIX 3: Added id="yuv-arena" anchor for scroll positioning -->
     <div id="yuv-arena" class="yuv-arena-wrapper <?php echo $has_voted ? 'yuv-show-results' : ''; ?>">
         
-        <!-- Arena Header NEW -->
+        <!-- Arena Header NEW - FIX 3: Added Timer -->
         <div class="yuv-arena-header-new">
             <span class="yuv-stage-pill"><?php echo esc_html($stage_label); ?></span>
             <h2 class="yuv-tournament-name"><?php echo esc_html($tournament_title); ?></h2>
@@ -441,6 +444,12 @@ function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $al
                     <?php echo esc_html($contenders[0]['name'] . ' vs ' . $contenders[1]['name']); ?>
                 <?php endif; ?>
             </h3>
+            
+            <?php if (!$has_voted && $end_time): ?>
+                <div class="yuv-timer-badge">
+                    Preostalo: <span id="yuv-duel-timer" data-end="<?php echo esc_attr($end_time); ?>">--:--:--</span>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Duel Arena (Split Screen) - FIX 1: Added data attributes for JS -->
@@ -457,25 +466,28 @@ function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $al
                     <div class="yuv-contender-img" style="background-image: url('<?php echo esc_url($left['image']); ?>');">
                         <div class="yuv-img-overlay"></div>
                     </div>
-
-                    <div class="yuv-contender-info">
-                        <h2 class="yuv-contender-name"><?php echo esc_html($left['name']); ?></h2>
-                        <?php if ($left['bio']): ?>
-                            <p class="yuv-contender-bio"><?php echo esc_html($left['bio']); ?></p>
+    
+                        <?php if (!$has_voted): ?>
+                            <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
+                                <span class="yuv-vote-icon">⚡</span>
+                                <span class="yuv-vote-text">GLASAJ</span>
+                            </button>
                         <?php endif; ?>
                     </div>
 
+                    <!-- FIX 4: Added vote count to result overlay -->
                     <div class="yuv-result-overlay">
                         <div class="yuv-result-bar" style="width: <?php echo esc_attr($left['percent']); ?>%;"></div>
                         <span class="yuv-percent"><?php echo esc_html($left['percent']); ?>%</span>
                         <span class="yuv-vote-count"><?php echo esc_html(number_format($left['votes'])); ?> glasova</span>
+                    </divn class="yuv-vote-count"><?php echo esc_html(number_format($left['votes'])); ?> glasova</span>
                     </div>
 
                     <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
                         <span class="yuv-vote-icon">⚡</span>
                         <span class="yuv-vote-text">GLASAJ</span>
                     </button>
-                </div>
+                </div> FIX 2: Proper positioning -
             <?php endif; ?>
 
             <!-- VS Badge -->
@@ -494,24 +506,27 @@ function yuv_render_arena_html($match_id, $tournament_id, $tournament_title, $al
 
                     <div class="yuv-contender-info">
                         <h2 class="yuv-contender-name"><?php echo esc_html($right['name']); ?></h2>
-                        <?php if ($right['bio']): ?>
-                            <p class="yuv-contender-bio"><?php echo esc_html($right['bio']); ?></p>
+                        
+                        <?php if (!$has_voted): ?>
+                            <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">
+                                <span class="yuv-vote-icon">⚡</span>
+                                <span class="yuv-vote-text">GLASAJ</span>
+                            </button>
                         <?php endif; ?>
                     </div>
 
+                    <!-- FIX 4: Added vote count to result overlay -->
                     <div class="yuv-result-overlay">
                         <div class="yuv-result-bar" style="width: <?php echo esc_attr($right['percent']); ?>%;"></div>
                         <span class="yuv-percent"><?php echo esc_html($right['percent']); ?>%</span>
                         <span class="yuv-vote-count"><?php echo esc_html(number_format($right['votes'])); ?> glasova</span>
-                    </div>
-
-                    <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">
+                    </divclass="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">
                         <span class="yuv-vote-icon">⚡</span>
                         <span class="yuv-vote-text">GLASAJ</span>
                     </button>
                 </div>
             <?php endif; ?>
-
+ FIX 5: Proper match_id links -
         </div>
 
         <!-- Navigation Strip (Footer with Links) -->
