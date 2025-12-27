@@ -23,6 +23,15 @@ function enqueue_quizzes_assets() {
         true
     );
 
+    // ✅ NEW: Enqueue Quiz Grid Filter JS
+    wp_enqueue_script(
+        'quiz-grid-filter',
+        get_stylesheet_directory_uri() . '/js/quizzes/quiz-grid-filter.js',
+        ['quizzes-js'], // Depends on main quiz JS
+        defined('HELLO_ELEMENTOR_CHILD_VERSION') ? HELLO_ELEMENTOR_CHILD_VERSION : '1.0.0',
+        true
+    );
+
     wp_localize_script('quizzes-js', 'quizSettings', [
         'apiUrl'    => esc_url_raw( rest_url('yugovote/v1') ),
         'soundPath' => get_stylesheet_directory_uri() . '/assets/sounds/',

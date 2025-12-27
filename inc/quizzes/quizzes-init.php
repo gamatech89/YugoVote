@@ -29,8 +29,13 @@ require_once $quizzes_inc_path . 'meta/quiz-category-meta.php';
 require_once $quizzes_inc_path . 'services/class-ygv-token-service.php';
 require_once $quizzes_inc_path . 'services/class-ygv-progress-service.php';
 
+// --- Shortcodes ---
 $levels_sc = $quizzes_inc_path . 'shortcodes/levels-per-category.php';
 if (file_exists($levels_sc)) require_once $levels_sc;
+
+// ✅ NEW: Quiz Grid Shortcode
+$quiz_grid_sc = $quizzes_inc_path . 'shortcodes/quiz-grid-shortcode.php';
+if (file_exists($quiz_grid_sc)) require_once $quiz_grid_sc;
 
 // Accessors
 if (!function_exists('ygv_tokens')) {
