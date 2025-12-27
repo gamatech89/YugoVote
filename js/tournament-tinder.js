@@ -15,7 +15,9 @@ jQuery(document).ready(function ($) {
 
   // Progress tracking
   let totalMatches = parseInt(arena.data("total-matches") || 0);
-  let votedMatches = parseInt(localStorage.getItem(`yuv_voted_${tournamentId}_${stage}`) || 0);
+  let votedMatches = parseInt(
+    localStorage.getItem(`yuv_voted_${tournamentId}_${stage}`) || 0
+  );
 
   updateProgressBar();
 
@@ -56,9 +58,10 @@ jQuery(document).ready(function ($) {
   function updateProgressBar() {
     const $progressBar = $("#yuv-progress-bar");
     const $progressText = $("#yuv-progress-text");
-    
+
     if ($progressBar.length) {
-      const percentage = totalMatches > 0 ? (votedMatches / totalMatches) * 100 : 0;
+      const percentage =
+        totalMatches > 0 ? (votedMatches / totalMatches) * 100 : 0;
       $progressBar.find(".yuv-progress-fill").css("width", percentage + "%");
       $progressText.text(`${votedMatches}/${totalMatches} duels completed`);
     }
@@ -95,17 +98,20 @@ jQuery(document).ready(function ($) {
         if (response.success) {
           // Update progress
           votedMatches++;
-          localStorage.setItem(`yuv_voted_${tournamentId}_${stage}`, votedMatches);
+          localStorage.setItem(
+            `yuv_voted_${tournamentId}_${stage}`,
+            votedMatches
+          );
           updateProgressBar();
 
           // Animate winner (scale up) and loser (fade out)
           const $winner = contender;
           const $loser = contender.siblings(".yuv-contender");
-          
+
           $winner.addClass("yuv-winner-animation");
           $loser.addClass("yuv-loser-animation");
 
-          setTimeout(function() {
+          setTimeout(function () {
             // Check if there are more matches
             if (votedMatches >= totalMatches) {
               // All matches completed - show bracket
@@ -149,26 +155,26 @@ jQuery(document).ready(function ($) {
       success: function (response) {
         if (response.success) {
           const data = response.data;
-          
+
           // Update match data
           currentMatchId = data.match_id;
           endTime = data.end_time;
-          
+
           // Slide out current content
           arena.addClass("yuv-slide-out");
-          
-          setTimeout(function() {
+
+          setTimeout(function () {
             // Update content
             updateArenaContent(data);
-            
+
             // Slide in new content
             arena.removeClass("yuv-slide-out").addClass("yuv-slide-in");
-            
-            setTimeout(function() {
+
+            setTimeout(function () {
               arena.removeClass("yuv-slide-in");
             }, 600);
           }, 600);
-          
+
           // Restart timer
           updateTimer();
         } else if (response.data && response.data.completed) {
@@ -176,7 +182,7 @@ jQuery(document).ready(function ($) {
           showFinalBracket();
         }
       },
-      error: function() {
+      error: function () {
         alert("Greška pri učitavanju sledećeg meča.");
       },
     });
@@ -189,37 +195,47 @@ jQuery(document).ready(function ($) {
   function updateArenaContent(data) {
     const item1 = data.item1;
     const item2 = data.item2;
-    
+
     // Update match number
-    $(".yuv-arena-header h2").text(`OSMINA FINALA ${data.match_number || ''}`);
-    
+    $(".yuv-arena-header h2").text(`OSMINA FINALA ${data.match_number || ""}`);
+
     // Update arena data attributes
     arena.attr({
       "data-match-id": currentMatchId,
       "data-end-time": endTime,
-      "data-user-voted": "false"
+      "data-user-voted": "false",
     });
-    
+
     // Update contenders
     const $contenders = $(".yuv-contender");
-    
+
     // Update first contender
     const $contender1 = $contenders.eq(0);
     $contender1.removeClass("yuv-winner-animation yuv-loser-animation");
     $contender1.find(".yuv-contender-img").attr("src", item1.image);
     $contender1.find(".yuv-contender-name").text(item1.name);
     $contender1.find(".yuv-contender-desc").text(item1.description);
-    $contender1.find(".yuv-vote-btn").attr("data-item-id", item1.id).prop("disabled", false)
-      .html('<span class="yuv-vote-icon">⚡</span><span class="yuv-vote-text">GLASAJ</span>');
-    
+    $contender1
+      .find(".yuv-vote-btn")
+      .attr("data-item-id", item1.id)
+      .prop("disabled", false)
+      .html(
+        '<span class="yuv-vote-icon">⚡</span><span class="yuv-vote-text">GLASAJ</span>'
+      );
+
     // Update second contender
     const $contender2 = $contenders.eq(1);
     $contender2.removeClass("yuv-winner-animation yuv-loser-animation");
     $contender2.find(".yuv-contender-img").attr("src", item2.image);
     $contender2.find(".yuv-contender-name").text(item2.name);
     $contender2.find(".yuv-contender-desc").text(item2.description);
-    $contender2.find(".yuv-vote-btn").attr("data-item-id", item2.id).prop("disabled", false)
-      .html('<span class="yuv-vote-icon">⚡</span><span class="yuv-vote-text">GLASAJ</span>');
+    $contender2
+      .find(".yuv-vote-btn")
+      .attr("data-item-id", item2.id)
+      .prop("disabled", false)
+      .html(
+        '<span class="yuv-vote-icon">⚡</span><span class="yuv-vote-text">GLASAJ</span>'
+      );
   }
 
   // ========================================================================
@@ -228,18 +244,21 @@ jQuery(document).ready(function ($) {
 
   function showFinalBracket() {
     arena.addClass("yuv-slide-out");
-    
-    setTimeout(function() {
+
+    setTimeout(function () {
       // Hide arena
       arena.hide();
-      
+
       // Show bracket
       const $bracket = $("#bracket-results");
       if ($bracket.length) {
         $bracket.show();
-        $("html, body").animate({
-          scrollTop: $bracket.offset().top - 100
-        }, 500);
+        $("html, body").animate(
+          {
+            scrollTop: $bracket.offset().top - 100,
+          },
+          500
+        );
       } else {
         // Fallback: reload to show results
         location.reload();
@@ -253,16 +272,19 @@ jQuery(document).ready(function ($) {
 
   function createNavigationDots() {
     if (totalMatches <= 1) return;
-    
+
     const $nav = $("<div>", { class: "yuv-match-navigation" });
-    
+
     for (let i = 0; i < totalMatches; i++) {
-      const $dot = $("<span>", { 
-        class: "yuv-nav-dot" + (i < votedMatches ? " completed" : "") + (i === votedMatches ? " active" : "")
+      const $dot = $("<span>", {
+        class:
+          "yuv-nav-dot" +
+          (i < votedMatches ? " completed" : "") +
+          (i === votedMatches ? " active" : ""),
       });
       $nav.append($dot);
     }
-    
+
     arena.after($nav);
   }
 

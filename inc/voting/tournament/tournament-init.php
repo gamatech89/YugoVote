@@ -58,8 +58,8 @@ function yuv_enqueue_tournament_assets() {
         true
     );
 
-    // Localize script with AJAX data
-    wp_localize_script('yuv-tournament-arena', 'yuvTournamentData', [
+    // Localize script with AJAX data for Tinder-style voting
+    wp_localize_script('yuv-tournament-tinder', 'yuvTournamentData', [
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('yuv_tournament_vote_nonce'),
     ]);
