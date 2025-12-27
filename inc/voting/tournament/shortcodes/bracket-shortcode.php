@@ -89,6 +89,11 @@ add_shortcode('yuv_auto_bracket', 'yuv_auto_bracket_shortcode');
  * Safe for use in Elementor - doesn't rely on global $post
  */
 function yuv_active_tournament_shortcode($atts) {
+    // Don't execute in Elementor editor mode
+    if (defined('ELEMENTOR_VERSION') && \Elementor\Plugin::$instance->editor->is_edit_mode()) {
+        return '<div style="padding: 20px; background: #e7f3ff; border: 2px dashed #2271b1; border-radius: 8px; text-align: center;"><p><strong>🏆 Turnir Widget</strong></p><p>Aktivni turnir će biti prikazan ovde na front-end-u.</p></div>';
+    }
+    
     // Save and clear global post to avoid conflicts
     global $post;
     $original_post = $post;
