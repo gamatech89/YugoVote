@@ -233,15 +233,6 @@ function yuv_render_tournament_bracket($tournament_id, $bracket_lists) {
     <?php
     return ob_get_clean();
 }
-        .yuv-tournament-description { font-size: 16px; color: #666; max-width: 800px; margin: 0 auto; }
-        .yuv-no-tournament { text-align: center; padding: 60px 20px; background: #f5f5f5; border-radius: 12px; }
-        .yuv-no-tournament p { font-size: 18px; color: #666; margin: 0; }
-    </style>
-    <?php
-    wp_reset_postdata();
-    return ob_get_clean();
-}
-add_shortcode('yuv_active_tournament', 'yuv_active_tournament_shortcode');
 
 /**
  * Tournament Archive Shortcode
