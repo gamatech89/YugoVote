@@ -236,23 +236,25 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
                 <div class="yuv-contender-bg" style="background-image: url('<?php echo esc_url($left['image']); ?>');"></div>
                 
                 <div class="yuv-contender-content">
-                    <h3 class="yuv-contender-name"><?php echo esc_html($left['name']); ?></h3>
-                    
-                    <?php if ($left['bio']): ?>
-                        <p class="yuv-contender-bio"><?php echo esc_html($left['bio']); ?></p>
-                    <?php endif; ?>
-                    
-                    <?php if (!$has_voted): ?>
-                        <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
-                            <span class="yuv-vote-icon">⚡</span>
-                            <span class="yuv-vote-text">GLASAJ</span>
-                        </button>
-                    <?php endif; ?>
-                    
-                    <!-- Vote Count Always Visible -->
-                    <div class="yuv-vote-count-display">
-                        <span class="yuv-vote-percent"><?php echo esc_html($left['percent']); ?>%</span>
-                        <span class="yuv-vote-number"><?php echo esc_html(number_format($left['votes'])); ?> glasova</span>
+                    <div class="yuv-contender-info-panel">
+                        <h3 class="yuv-contender-name"><?php echo esc_html($left['name']); ?></h3>
+                        
+                        <?php if ($left['bio']): ?>
+                            <p class="yuv-contender-bio"><?php echo esc_html($left['bio']); ?></p>
+                        <?php endif; ?>
+                        
+                        <?php if (!$has_voted): ?>
+                            <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($left['id']); ?>">
+                                <span class="yuv-vote-icon">⚡</span>
+                                <span class="yuv-vote-text">GLASAJ</span>
+                            </button>
+                        <?php endif; ?>
+                        
+                        <!-- Vote Count Only Visible After Voting -->
+                        <div class="yuv-vote-count-display">
+                            <span class="yuv-vote-percent"><?php echo esc_html($left['percent']); ?>%</span>
+                            <span class="yuv-vote-number"><?php echo esc_html(number_format($left['votes'])); ?> glasova</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -273,23 +275,25 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
                 <div class="yuv-contender-bg" style="background-image: url('<?php echo esc_url($right['image']); ?>');"></div>
                 
                 <div class="yuv-contender-content">
-                    <h3 class="yuv-contender-name"><?php echo esc_html($right['name']); ?></h3>
-                    
-                    <?php if ($right['bio']): ?>
-                        <p class="yuv-contender-bio"><?php echo esc_html($right['bio']); ?></p>
-                    <?php endif; ?>
-                    
-                    <?php if (!$has_voted): ?>
-                        <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">
-                            <span class="yuv-vote-icon">⚡</span>
-                            <span class="yuv-vote-text">GLASAJ</span>
-                        </button>
-                    <?php endif; ?>
-                    
-                    <!-- Vote Count Always Visible -->
-                    <div class="yuv-vote-count-display">
-                        <span class="yuv-vote-percent"><?php echo esc_html($right['percent']); ?>%</span>
-                        <span class="yuv-vote-number"><?php echo esc_html(number_format($right['votes'])); ?> glasova</span>
+                    <div class="yuv-contender-info-panel">
+                        <h3 class="yuv-contender-name"><?php echo esc_html($right['name']); ?></h3>
+                        
+                        <?php if ($right['bio']): ?>
+                            <p class="yuv-contender-bio"><?php echo esc_html($right['bio']); ?></p>
+                        <?php endif; ?>
+                        
+                        <?php if (!$has_voted): ?>
+                            <button class="yuv-vote-btn" data-item-id="<?php echo esc_attr($right['id']); ?>">
+                                <span class="yuv-vote-icon">⚡</span>
+                                <span class="yuv-vote-text">GLASAJ</span>
+                            </button>
+                        <?php endif; ?>
+                        
+                        <!-- Vote Count Only Visible After Voting -->
+                        <div class="yuv-vote-count-display">
+                            <span class="yuv-vote-percent"><?php echo esc_html($right['percent']); ?>%</span>
+                            <span class="yuv-vote-number"><?php echo esc_html(number_format($right['votes'])); ?> glasova</span>
+                        </div>
                     </div>
                 </div>
                 
