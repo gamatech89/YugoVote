@@ -89,6 +89,48 @@ function yuv_get_category_total_votes($term_id) {
                 $term_color = get_term_meta($term_id, 'category_color', true) ?: '#4355A4';
                 $logo_id = get_term_meta($term_id, 'category_logo', true);
                 
+                // DEBUG: Test query without filters
+                $test_query = new WP_Query([
+                    'post_type' => 'voting_list',
+                    'post_status' => 'publish',
+                    'posts_per_page' => 1,
+                    'fields' => 'ids',
+                ]);
+                echo '<!-- DEBUG - Total voting_lists in DB: ' . $test_query->found_posts . ' -->';
+                
+                // DEBUG: Test with only taxonomy filter
+                $test_tax_query = new WP_Query([
+                    'post_type' => 'voting_list',
+                    'post_status' => 'publish',
+                    'posts_per_page' => 1,
+                    'fields' => 'ids',
+                    'tax_query' => [
+                        [
+                            'taxonomy' => 'voting_list_category',
+                            'field' => 'term_id',
+                            'terms' => $term_id,
+                            'include_children' => true,
+                        ],
+                    ],
+                ]);
+                echo '<!-- DEBUG - Lists with tax_query only for term ' . $term_id . ': ' . $test_tax_query->found_posts . ' -->';
+                
+                // DEBUG: Test with only meta_query filter
+                $test_meta_query = new WP_Query([
+                    'post_type' => 'voting_list',
+                    'post_status' => 'publish',
+                    'posts_per_page' => 1,
+                    'fields' => 'ids',
+                    'meta_query' => [
+                        [
+                            'key' => '_is_tournament_match',
+                            'compare' => 'NOT EXISTS',
+                        ],
+                    ],
+                ]);
+                echo '<!-- DEBUG - Lists with meta_query only: ' . $test_meta_query->found_posts . ' -->';
+                wp_reset_postdata();
+                
                 // Get top 3 voting lists for this category (sorted by votes)
                 $top_lists_args = [
                     'post_type'      => 'voting_list',
