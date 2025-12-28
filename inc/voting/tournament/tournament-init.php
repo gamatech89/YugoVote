@@ -49,18 +49,18 @@ function yuv_enqueue_tournament_assets() {
         '1.0.0'
     );
 
-    // Enqueue tournament JS - Carousel style
+    // Enqueue tournament JS
     wp_enqueue_script(
-        'yuv-tournament-carousel',
-        get_stylesheet_directory_uri() . '/js/tournament-carousel.js',
+        'yuv-tournament',
+        get_stylesheet_directory_uri() . '/js/tournament.js',
         ['jquery'],
-        '1.0.0',
+        '1.0.2',
         true
     );
 
-    // Localize script with AJAX data for carousel voting
-    wp_localize_script('yuv-tournament-carousel', 'yuvTournamentData', [
+    // Localize script with AJAX data
+    wp_localize_script('yuv-tournament', 'yuvTournament', [
         'ajaxurl' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('yuv_tournament_vote_nonce'),
+        'nonce' => wp_create_nonce('yuv_tournament_nonce'),
     ]);
 }

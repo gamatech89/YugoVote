@@ -38,7 +38,7 @@
 
         // Cast vote via AJAX
         $.ajax({
-          url: ajaxurl,
+          url: yuvTournament.ajaxurl,
           method: 'POST',
           data: {
             action: 'yuv_cast_tournament_vote',
@@ -124,7 +124,7 @@
       $arena.css('opacity', '0.5');
 
       $.ajax({
-        url: ajaxurl,
+        url: yuvTournament.ajaxurl,
         method: 'POST',
         data: {
           action: 'yuv_load_match',
