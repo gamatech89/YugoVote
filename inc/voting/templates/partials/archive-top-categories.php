@@ -129,16 +129,37 @@ function yuv_get_category_total_votes($term_id) {
                     ],
                 ]);
                 echo '<!-- DEBUG - Lists with meta_query only: ' . $test_meta_query->found_posts . ' -->';
+                
+                // DEBUG: Test full query WITHOUT orderby/meta_key
+                $test_full_no_order = new WP_Query([
+                    'post_type' => 'voting_list',
+                    'post_status' => 'publish',
+                    'posts_per_page' => 3,
+                    'meta_query' => [
+                        [
+                            'key' => '_is_tournament_match',
+                            'compare' => 'NOT EXISTS',
+                        ],
+                    ],
+                    'tax_query' => [
+                        [
+                            'taxonomy' => 'voting_list_category',
+                            'field' => 'term_id',
+                            'terms' => $term_id,
+                            'include_children' => true,
+                        ],
+                    ],
+                ]);
+                echo '<!-- DEBUG - Full query WITHOUT orderby: ' . $test_full_no_order->found_posts . ' -->';
                 wp_reset_postdata();
                 
-                // Get top 3 voting lists for this category (sorted by votes)
+                // Get top 3 voting lists for this category (NO orderby for now)
                 $top_lists_args = [
                     'post_type'      => 'voting_list',
                     'post_status'    => 'publish',
                     'posts_per_page' => 3,
-                    'orderby'        => 'meta_value_num',
+                    'orderby'        => 'date',
                     'order'          => 'DESC',
-                    'meta_key'       => 'total_score',
                     'meta_query'     => [
                         [
                             'key'     => '_is_tournament_match',
@@ -178,6 +199,8 @@ function yuv_get_category_total_votes($term_id) {
                     wp_reset_postdata();
                     continue;
                 }
+                
+                echo '<!-- DEBUG - SUCCESS! Found lists, rendering card -->';
                 
                 // Calculate total votes in category (same method as trending)
                 $total_votes = yuv_get_category_total_votes($term_id);
