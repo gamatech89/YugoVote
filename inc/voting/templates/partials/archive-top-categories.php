@@ -13,18 +13,27 @@
 
 if (!defined('ABSPATH')) exit;
 
-// Fetch all top-level (parent) categories
+// Debug: Check if we're getting categories
 $parent_categories = get_terms([
     'taxonomy'   => 'voting_list_category',
     'parent'     => 0,
-    'hide_empty' => true,
+    'hide_empty' => false, // Changed to false to see ALL categories
     'orderby'    => 'name',
     'order'      => 'ASC',
 ]);
 
-if (empty($parent_categories) || is_wp_error($parent_categories)) {
+// Debug output
+if (is_wp_error($parent_categories)) {
+    echo '<!-- Error getting categories: ' . $parent_categories->get_error_message() . ' -->';
     return;
 }
+
+if (empty($parent_categories)) {
+    echo '<!-- No parent categories found. Total terms: ' . wp_count_terms('voting_list_category') . ' -->';
+    return;
+}
+
+echo '<!-- Found ' . count($parent_categories) . ' parent categories -->';
 ?>
 
 <section class="yuv-top-categories-section">
@@ -48,6 +57,8 @@ if (empty($parent_categories) || is_wp_error($parent_categories)) {
             <?php 
             $index = 0;
             foreach ($parent_categories as $term): 
+                echo '<!-- Processing category: ' . $term->name . ' (ID: ' . $term->term_id . ') -->';
+                
                 $term_id = $term->term_id;
                 $term_slug = $term->slug;
                 $term_name = $term->name;
@@ -81,8 +92,11 @@ if (empty($parent_categories) || is_wp_error($parent_categories)) {
                 
                 $top_lists = new WP_Query($top_lists_args);
                 
+                echo '<!-- Found ' . $top_lists->found_posts . ' posts for category ' . $term->name . ' -->';
+                
                 // Skip categories with no lists
                 if (!$top_lists->have_posts()) {
+                    echo '<!-- Skipping category ' . $term->name . ' - no posts -->';
                     wp_reset_postdata();
                     continue;
                 }
@@ -93,10 +107,6 @@ if (empty($parent_categories) || is_wp_error($parent_categories)) {
                     'fields' => 'ids'
                 ]);
                 $all_lists = get_posts($all_lists_args);
-                $total_votes = 0;
-                foreach ($all_lists as $post_id) {
-                    $total_votes += (int) get_post_meta($post_id, '_yuv_voting_total_votes', true);
-                }
                 $total_votes = 0;
                 foreach ($all_lists as $post_id) {
                     $total_votes += (int) get_post_meta($post_id, '_yuv_voting_total_votes', true);
