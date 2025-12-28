@@ -515,3 +515,26 @@ if (!function_exists('cs_voting_trending_shortcode')) {
     }
     add_shortcode('voting_trending', 'cs_voting_trending_shortcode');
 }
+/**
+ * Shortcode: Display Top Categories with Zigzag Layout
+ * Usage: [voting_top_categories]
+ * 
+ * Shows all top-level categories with:
+ * - Large circular mascot/logo
+ * - Top voting list per category
+ * - Alternating left/right layout
+ */
+if (!function_exists('cs_voting_top_categories_shortcode')) {
+    function cs_voting_top_categories_shortcode() {
+        ob_start();
+        
+        $template_path = get_stylesheet_directory() . '/inc/voting/templates/partials/archive-top-categories.php';
+        
+        if (file_exists($template_path)) {
+            include $template_path;
+        }
+        
+        return ob_get_clean();
+    }
+    add_shortcode('voting_top_categories', 'cs_voting_top_categories_shortcode');
+}
