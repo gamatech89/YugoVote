@@ -721,13 +721,13 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 70px;
+  overflow: hidden; /* ✅ CRITICAL: Hide cards outside visible area */
 }
 
 /* Carousel Track (scrollable container) */
 .yuv-carousel-track {
   display: flex;
   gap: 24px;
-  overflow: hidden;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

@@ -1,7 +1,7 @@
 <?php
 /**
  * Template Part: Top Categories with Top 3 Lists
- * Compact design with vote counting per category
+ * Carousel with manual vote sorting
  * 
  * @package YugoVote
  */
@@ -18,19 +18,14 @@ $parent_categories = get_terms([
 ]);
 
 if (empty($parent_categories) || is_wp_error($parent_categories)) {
-    echo '<!-- DEBUG: No parent categories found or WP_Error -->';
     return;
 }
 
-echo '<!-- DEBUG: Found ' . count($parent_categories) . ' parent categories -->';
-foreach ($parent_categories as $cat) {
-    echo '<!-- DEBUG Category: ' . $cat->name . ' (ID: ' . $cat->term_id . ') -->';
-}
-
 /**
- * Calculate total votes for entire category (same as trending section)
+ * Calculate total votes for entire category (using get_total_score_for_voting_list)
  */
 function yuv_get_category_total_votes($term_id) {
+    // Get all lists in this category (including children)
     $args = [
         'post_type'      => 'voting_list',
         'post_status'    => 'publish',
@@ -67,6 +62,64 @@ function yuv_get_category_total_votes($term_id) {
     
     return $total_votes;
 }
+
+/**
+ * Get top 3 lists by actual vote count (manual sorting)
+ */
+function yuv_get_top_3_lists_by_votes($term_id) {
+    // Get ALL lists in category (including children)
+    $args = [
+        'post_type'      => 'voting_list',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+        'meta_query'     => [
+            [
+                'key'     => '_is_tournament_match',
+                'compare' => 'NOT EXISTS',
+            ],
+        ],
+        'tax_query'      => [
+            [
+                'taxonomy'         => 'voting_list_category',
+                'field'            => 'term_id',
+                'terms'            => $term_id,
+                'include_children' => true,
+            ],
+        ],
+    ];
+    
+    $list_ids = get_posts($args);
+    
+    if (empty($list_ids)) {
+        return [];
+    }
+    
+    // Build array with votes
+    $lists_with_votes = [];
+    foreach ($list_ids as $list_id) {
+        $vote_count = 0;
+        
+        if (function_exists('get_total_score_for_voting_list')) {
+            $vote_count = (int) get_total_score_for_voting_list($list_id);
+        } else {
+            $vote_count = (int) get_post_meta($list_id, 'total_score', true);
+        }
+        
+        $lists_with_votes[] = [
+            'id'    => $list_id,
+            'votes' => $vote_count,
+        ];
+    }
+    
+    // Sort by votes DESC
+    usort($lists_with_votes, function($a, $b) {
+        return $b['votes'] - $a['votes'];
+    });
+    
+    // Return top 3
+    return array_slice($lists_with_votes, 0, 3);
+}
 ?>
 
 <section class="yuv-top-categories-section">
@@ -89,123 +142,16 @@ function yuv_get_category_total_votes($term_id) {
                 $term_color = get_term_meta($term_id, 'category_color', true) ?: '#4355A4';
                 $logo_id = get_term_meta($term_id, 'category_logo', true);
                 
-                // DEBUG: Test query without filters
-                $test_query = new WP_Query([
-                    'post_type' => 'voting_list',
-                    'post_status' => 'publish',
-                    'posts_per_page' => 1,
-                    'fields' => 'ids',
-                ]);
-                echo '<!-- DEBUG - Total voting_lists in DB: ' . $test_query->found_posts . ' -->';
+                // Get top 3 lists sorted by votes
+                $top_3_lists = yuv_get_top_3_lists_by_votes($term_id);
                 
-                // DEBUG: Test with only taxonomy filter
-                $test_tax_query = new WP_Query([
-                    'post_type' => 'voting_list',
-                    'post_status' => 'publish',
-                    'posts_per_page' => 1,
-                    'fields' => 'ids',
-                    'tax_query' => [
-                        [
-                            'taxonomy' => 'voting_list_category',
-                            'field' => 'term_id',
-                            'terms' => $term_id,
-                            'include_children' => true,
-                        ],
-                    ],
-                ]);
-                echo '<!-- DEBUG - Lists with tax_query only for term ' . $term_id . ': ' . $test_tax_query->found_posts . ' -->';
-                
-                // DEBUG: Test with only meta_query filter
-                $test_meta_query = new WP_Query([
-                    'post_type' => 'voting_list',
-                    'post_status' => 'publish',
-                    'posts_per_page' => 1,
-                    'fields' => 'ids',
-                    'meta_query' => [
-                        [
-                            'key' => '_is_tournament_match',
-                            'compare' => 'NOT EXISTS',
-                        ],
-                    ],
-                ]);
-                echo '<!-- DEBUG - Lists with meta_query only: ' . $test_meta_query->found_posts . ' -->';
-                
-                // DEBUG: Test full query WITHOUT orderby/meta_key
-                $test_full_no_order = new WP_Query([
-                    'post_type' => 'voting_list',
-                    'post_status' => 'publish',
-                    'posts_per_page' => 3,
-                    'meta_query' => [
-                        [
-                            'key' => '_is_tournament_match',
-                            'compare' => 'NOT EXISTS',
-                        ],
-                    ],
-                    'tax_query' => [
-                        [
-                            'taxonomy' => 'voting_list_category',
-                            'field' => 'term_id',
-                            'terms' => $term_id,
-                            'include_children' => true,
-                        ],
-                    ],
-                ]);
-                echo '<!-- DEBUG - Full query WITHOUT orderby: ' . $test_full_no_order->found_posts . ' -->';
-                wp_reset_postdata();
-                
-                // Get top 3 voting lists for this category (NO orderby for now)
-                $top_lists_args = [
-                    'post_type'      => 'voting_list',
-                    'post_status'    => 'publish',
-                    'posts_per_page' => 3,
-                    'orderby'        => 'date',
-                    'order'          => 'DESC',
-                    'meta_query'     => [
-                        [
-                            'key'     => '_is_tournament_match',
-                            'compare' => 'NOT EXISTS',
-                        ],
-                    ],
-                    'tax_query'      => [
-                        [
-                            'taxonomy'         => 'voting_list_category',
-                            'field'            => 'term_id',
-                            'terms'            => $term_id,
-                            'include_children' => true,
-                        ],
-                    ],
-                ];
-                
-                $top_lists = new WP_Query($top_lists_args);
-                
-                echo '<!-- DEBUG Category: ' . esc_html($term_name) . ' -->';
-                echo '<!-- DEBUG - Term ID: ' . $term_id . ' -->';
-                echo '<!-- DEBUG - Found posts: ' . $top_lists->found_posts . ' -->';
-                echo '<!-- DEBUG - Post count: ' . $top_lists->post_count . ' -->';
-                if ($top_lists->have_posts()) {
-                    while ($top_lists->have_posts()) {
-                        $top_lists->the_post();
-                        $debug_id = get_the_ID();
-                        $debug_score = get_post_meta($debug_id, 'total_score', true);
-                        $debug_title = get_the_title();
-                        echo '<!-- DEBUG - List: ' . esc_html($debug_title) . ' (ID: ' . $debug_id . ', Score: ' . $debug_score . ') -->';
-                    }
-                    wp_reset_postdata();
-                }
-                
-                // Skip categories with no lists
-                if (!$top_lists->have_posts()) {
-                    echo '<!-- DEBUG - SKIPPING category (no posts found) -->';
-                    wp_reset_postdata();
+                // Skip if no lists
+                if (empty($top_3_lists)) {
                     continue;
                 }
                 
-                echo '<!-- DEBUG - SUCCESS! Found lists, rendering card -->';
-                
-                // Calculate total votes in category (same method as trending)
+                // Calculate total votes
                 $total_votes = yuv_get_category_total_votes($term_id);
-                
-                echo '<!-- DEBUG - Total category votes: ' . $total_votes . ' -->';
             ?>
             
             <div class="yuv-cat-card" style="--cat-color: <?php echo esc_attr($term_color); ?>;">
@@ -233,23 +179,17 @@ function yuv_get_category_total_votes($term_id) {
                     <ul class="yuv-ranking-list">
                         <?php 
                         $rank = 1;
-                        while ($top_lists->have_posts()): 
-                            $top_lists->the_post();
-                            $list_id = get_the_ID();
-                            
-                            // Use same vote counting as trending section
-                            $list_votes = 0;
-                            if (function_exists('get_total_score_for_voting_list')) {
-                                $list_votes = (int) get_total_score_for_voting_list($list_id);
-                            } else {
-                                $list_votes = (int) get_post_meta($list_id, 'total_score', true);
-                            }
+                        foreach ($top_3_lists as $list_data): 
+                            $list_id = $list_data['id'];
+                            $list_votes = $list_data['votes'];
+                            $list_title = get_the_title($list_id);
+                            $list_permalink = get_permalink($list_id);
                         ?>
                             <li class="yuv-rank-item">
                                 <span class="rank-num">#<?php echo $rank; ?></span>
                                 <div class="rank-info">
-                                    <a href="<?php the_permalink(); ?>" class="rank-title">
-                                        <?php the_title(); ?>
+                                    <a href="<?php echo esc_url($list_permalink); ?>" class="rank-title">
+                                        <?php echo esc_html($list_title); ?>
                                     </a>
                                     <span class="rank-votes">
                                         <?php echo number_format_i18n($list_votes); ?> glasova
@@ -258,8 +198,7 @@ function yuv_get_category_total_votes($term_id) {
                             </li>
                         <?php 
                             $rank++;
-                        endwhile; 
-                        wp_reset_postdata();
+                        endforeach; 
                         ?>
                     </ul>
                     
