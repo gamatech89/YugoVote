@@ -114,7 +114,7 @@ add_action('wp_ajax_nopriv_yuv_cast_tournament_vote', 'yuv_cast_tournament_vote_
 
 function yuv_cast_tournament_vote_ajax() {
     // Verify nonce
-    $nonce_check = check_ajax_referer('yuv_tournament_vote_nonce', '_ajax_nonce', false);
+    $nonce_check = check_ajax_referer('yuv_tournament_nonce', 'nonce', false);
     if (!$nonce_check) {
         wp_send_json_error(['message' => 'Sigurnosna provera nije uspela. Osvežite stranicu i pokušajte ponovo.']);
     }
