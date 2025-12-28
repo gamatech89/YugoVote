@@ -98,11 +98,11 @@
         });
       }
 
-      // Auto-advance to next match after 3 seconds
+      // Auto-advance to next match after 600ms
       if (data.next_match) {
         setTimeout(function () {
           TournamentDuel.loadMatch(data.next_match.match_id);
-        }, 3000);
+        }, 600);
       }
     },
 
