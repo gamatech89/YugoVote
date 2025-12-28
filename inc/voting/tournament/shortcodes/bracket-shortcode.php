@@ -215,7 +215,7 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
                 </p>
             <?php endif; ?>
             
-            <?php if (!$has_voted && $end_time): ?>
+            <?php if ($end_time): ?>
                 <div class="yuv-timer-display">
                     <span>⏱️ Preostalo:</span>
                     <span class="yuv-timer-value" data-end="<?php echo esc_attr($end_time); ?>">--:--:--</span>
@@ -248,14 +248,20 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
                             <span class="yuv-vote-text">GLASAJ</span>
                         </button>
                     <?php endif; ?>
+                    
+                    <!-- Vote Count Always Visible -->
+                    <div class="yuv-vote-count-display">
+                        <span class="yuv-vote-percent"><?php echo esc_html($left['percent']); ?>%</span>
+                        <span class="yuv-vote-number"><?php echo esc_html(number_format($left['votes'])); ?> glasova</span>
+                    </div>
                 </div>
                 
-                <!-- Result Overlay -->
-                <div class="yuv-result-overlay">
+                <!-- Result Bar for voted state -->
+                <?php if ($has_voted): ?>
+                <div class="yuv-result-bar-container">
                     <div class="yuv-result-bar" style="width: <?php echo esc_attr($left['percent']); ?>%;"></div>
-                    <span class="yuv-result-percent"><?php echo esc_html($left['percent']); ?>%</span>
-                    <span class="yuv-result-votes"><?php echo esc_html(number_format($left['votes'])); ?> glasova</span>
                 </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
             
@@ -279,14 +285,20 @@ function yuv_render_duel_arena($match_id, $tournament_id, $tournament_title, $al
                             <span class="yuv-vote-text">GLASAJ</span>
                         </button>
                     <?php endif; ?>
+                    
+                    <!-- Vote Count Always Visible -->
+                    <div class="yuv-vote-count-display">
+                        <span class="yuv-vote-percent"><?php echo esc_html($right['percent']); ?>%</span>
+                        <span class="yuv-vote-number"><?php echo esc_html(number_format($right['votes'])); ?> glasova</span>
+                    </div>
                 </div>
                 
-                <!-- Result Overlay -->
-                <div class="yuv-result-overlay">
+                <!-- Result Bar for voted state -->
+                <?php if ($has_voted): ?>
+                <div class="yuv-result-bar-container">
                     <div class="yuv-result-bar" style="width: <?php echo esc_attr($right['percent']); ?>%;"></div>
-                    <span class="yuv-result-percent"><?php echo esc_html($right['percent']); ?>%</span>
-                    <span class="yuv-result-votes"><?php echo esc_html(number_format($right['votes'])); ?> glasova</span>
                 </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
             
