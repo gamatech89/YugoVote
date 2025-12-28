@@ -1,11 +1,12 @@
 <?php
 /**
- * Template Part: Top Categories Zigzag Layout
+ * Template Part: Top Categories with Top 3 Lists
  * 
  * Displays categories in alternating left/right layout with:
  * - Large circular mascot/logo
- * - Category info box with top voting list
- * - Alternating sides for visual interest
+ * - Category name and total votes
+ * - Top 3 voting lists by votes
+ * - Link to category archive
  * 
  * @package YugoVote
  */
@@ -28,20 +29,21 @@ if (empty($parent_categories) || is_wp_error($parent_categories)) {
 
 <section class="yuv-top-categories-section">
     <div class="cs-container">
+        
         <!-- Section Header -->
         <div class="yuv-categories-header">
             <div class="yuv-header-content">
                 <h2 class="yuv-section-title">Najpopularnije objave po kategorijama</h2>
                 <p class="yuv-section-description">
-                    Vestibulum sollicitudin ultricies orci, et posuere tortor fermentum nec. Integer iaculis molestie lectus.
+                    Glasajte za svoje favorite i otkrijte najtraženije liste u svakoj kategoriji.
                 </p>
             </div>
-            <a href="/sve-kategorije" class="yuv-btn-view-all">
+            <a href="/liste-za-glasanje" class="yuv-btn-view-all">
                 pogledaj<br>više
             </a>
         </div>
         
-        <!-- Zigzag Category List -->
+        <!-- Zigzag Category Rows -->
         <div class="yuv-categories-zigzag">
             <?php 
             $index = 0;
@@ -52,13 +54,12 @@ if (empty($parent_categories) || is_wp_error($parent_categories)) {
                 $term_link = get_term_link($term);
                 $term_color = get_term_meta($term_id, 'category_color', true) ?: '#4355A4';
                 $logo_id = get_term_meta($term_id, 'category_logo', true);
-                $slogan = get_term_meta($term_id, 'category_slogan', true);
                 
-                // Get top voting list for this category
-                $top_list_args = [
+                // Get top 3 voting lists for this category
+                $top_lists_args = [
                     'post_type'      => 'voting_list',
                     'post_status'    => 'publish',
-                    'posts_per_page' => 1,
+                    'posts_per_page' => 3,
                     'orderby'        => 'meta_value_num',
                     'order'          => 'DESC',
                     'meta_key'       => '_yuv_voting_total_votes',
@@ -78,36 +79,36 @@ if (empty($parent_categories) || is_wp_error($parent_categories)) {
                     ],
                 ];
                 
-                $top_list = new WP_Query($top_list_args);
+                $top_lists = new WP_Query($top_lists_args);
                 
-                if (!$top_list->have_posts()) {
+                // Skip categories with no lists
+                if (!$top_lists->have_posts()) {
                     wp_reset_postdata();
-                    $index++;
                     continue;
                 }
                 
-                $top_list->the_post();
-                $list_id = get_the_ID();
-                $list_title = get_the_title();
-                $list_excerpt = get_the_excerpt();
-                $list_votes = (int) get_post_meta($list_id, '_yuv_voting_total_votes', true);
-                $list_permalink = get_permalink();
-                
                 // Calculate total votes in category
-                $all_lists_args = array_merge($top_list_args, ['posts_per_page' => -1, 'fields' => 'ids']);
+                $all_lists_args = array_merge($top_lists_args, [
+                    'posts_per_page' => -1, 
+                    'fields' => 'ids'
+                ]);
                 $all_lists = get_posts($all_lists_args);
                 $total_votes = 0;
                 foreach ($all_lists as $post_id) {
                     $total_votes += (int) get_post_meta($post_id, '_yuv_voting_total_votes', true);
                 }
+                $total_votes = 0;
+                foreach ($all_lists as $post_id) {
+                    $total_votes += (int) get_post_meta($post_id, '_yuv_voting_total_votes', true);
+                }
                 
-                wp_reset_postdata();
-                
+                // Alternate left/right layout
                 $is_even = ($index % 2 === 0);
                 $side_class = $is_even ? 'yuv-cat-row--left' : 'yuv-cat-row--right';
             ?>
             
             <div class="yuv-cat-row <?php echo esc_attr($side_class); ?>">
+                
                 <!-- Mascot Circle -->
                 <div class="yuv-cat-mascot" style="background-color: <?php echo esc_attr($term_color); ?>;">
                     <?php if ($logo_id): ?>
@@ -115,31 +116,58 @@ if (empty($parent_categories) || is_wp_error($parent_categories)) {
                     <?php endif; ?>
                 </div>
                 
-                <!-- Content Box -->
+                <!-- Content Box with Top 3 Lists -->
                 <div class="yuv-cat-content">
                     <div class="yuv-cat-box">
-                        <h3 class="yuv-cat-name" style="color: <?php echo esc_attr($term_color); ?>;">
-                            <?php echo esc_html(strtoupper($term_name)); ?>
-                        </h3>
-                        <span class="yuv-cat-votes" style="color: <?php echo esc_attr($term_color); ?>;">
-                            <?php echo number_format_i18n($total_votes); ?> GLASOVA
-                        </span>
                         
-                        <h4 class="yuv-list-title">
-                            <?php echo esc_html($list_title); ?>
-                        </h4>
+                        <!-- Category Header -->
+                        <div class="yuv-cat-header">
+                            <h3 class="yuv-cat-name" style="color: <?php echo esc_attr($term_color); ?>;">
+                                <?php echo esc_html(strtoupper($term_name)); ?>
+                            </h3>
+                            <span class="yuv-cat-votes" style="color: <?php echo esc_attr($term_color); ?>;">
+                                <?php echo number_format_i18n($total_votes); ?> GLASOVA
+                            </span>
+                        </div>
                         
-                        <p class="yuv-list-description">
-                            <?php echo esc_html($list_excerpt); ?>
-                        </p>
+                        <!-- Top 3 Ranking List -->
+                        <ul class="yuv-ranking-list">
+                            <?php 
+                            $rank = 1;
+                            while ($top_lists->have_posts()): 
+                                $top_lists->the_post();
+                                $list_id = get_the_ID();
+                                $list_votes = (int) get_post_meta($list_id, '_yuv_voting_total_votes', true);
+                            ?>
+                                <li class="yuv-rank-item">
+                                    <span class="rank-num" style="background-color: <?php echo esc_attr($term_color); ?>;">
+                                        #<?php echo $rank; ?>
+                                    </span>
+                                    <div class="rank-info">
+                                        <a href="<?php the_permalink(); ?>" class="rank-title">
+                                            <?php the_title(); ?>
+                                        </a>
+                                        <span class="rank-votes">
+                                            <?php echo number_format_i18n($list_votes); ?> glasova
+                                        </span>
+                                    </div>
+                                </li>
+                            <?php 
+                                $rank++;
+                            endwhile; 
+                            wp_reset_postdata();
+                            ?>
+                        </ul>
                         
+                        <!-- View More Arrow Button -->
                         <a href="<?php echo esc_url($term_link); ?>" 
                            class="yuv-cat-arrow" 
                            style="background-color: <?php echo esc_attr($term_color); ?>;">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="20" height="20">
                                 <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
                             </svg>
                         </a>
+                        
                     </div>
                 </div>
             </div>
@@ -149,5 +177,6 @@ if (empty($parent_categories) || is_wp_error($parent_categories)) {
             endforeach; 
             ?>
         </div>
+        
     </div>
 </section>
