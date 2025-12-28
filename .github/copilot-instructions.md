@@ -33,22 +33,75 @@ inc/[module]/
 
 **Loading order**: `functions.php` → `inc/init.php` → each module's `*-init.php` → submodules
 
-## 🔑 Critical Patterns & Conventions
+## � Development Environment
+
+### Theme Setup
+
+This is a **child theme** of Hello Elementor. Required setup:
+
+1. **Parent theme**: Hello Elementor must be installed
+2. **Database migrations**: Run automatically on theme activation via `inc/migrations/migrations-init.php`
+3. **Dependencies**: jQuery (included by default), no build process required
+4. **Custom pages**: Create WordPress pages matching slugs in `inc/config.php`:
+   - `/login` - Login page
+   - `/registracija` - Registration page
+   - `/kompletiranje-naloga` - Complete profile page
+   - `/moj-nalog` - Account dashboard
+
+### Debugging & Testing
+
+```php
+// Enable WordPress debugging (wp-config.php)
+define('WP_DEBUG', true);
+define('WP_DEBUG_LOG', true);
+define('WP_DEBUG_DISPLAY', false);
+
+// Check migration status
+SELECT * FROM wp_options WHERE option_name = 'voting_db_version';
+
+// Inspect user tokens
+SELECT * FROM wp_ygv_user_tokens WHERE user_id = 1;
+
+// Check tournament progress
+SELECT * FROM wp_voting_list_votes
+WHERE voting_list_id IN (
+    SELECT ID FROM wp_posts WHERE post_type = 'voting_list'
+    AND meta_key = '_is_tournament_match'
+);
+```
+
+## �🔑 Critical Patterns & Conventions
 
 ### 1. Function Naming: Prefix by Module
 
-**Tournament Module** uses `yuv_` prefix (e.g., `yuv_active_duel_shortcode`, `yuv_cast_tournament_vote`):
+This codebase uses **four distinct function prefixes**:
+
+**`yuv_`** - Tournament module (YugoVote):
 
 ```php
-function yuv_cast_tournament_vote_ajax() { ... }     // ✅ Tournament
-function yuv_render_arena($match_id) { ... }         // ✅ Tournament
+function yuv_cast_tournament_vote_ajax() { ... }     // Tournament AJAX
+function yuv_render_arena($match_id) { ... }         // Tournament display
 ```
 
-**Other modules** use `cs_` prefix (legacy convention):
+**`ygv_`** - Quiz services & account features (YoGuVote):
 
 ```php
-function cs_add_voting_list_columns($columns) { ... }     // ✅ Voting admin
-function cs_register_poll_cpt() { ... }                   // ✅ Polls
+class YGV_Token_Service { ... }                       // Quiz token system
+function ygv_account_panel_shortcode() { ... }        // Account UI
+```
+
+**`yugo_`** - User authentication system:
+
+```php
+function yugo_login_form_shortcode() { ... }          // Login/register forms
+```
+
+**`cs_`** - Legacy prefix (voting, polls, admin, helpers):
+
+```php
+function cs_add_voting_list_columns($columns) { ... } // Voting admin
+function cs_register_poll_cpt() { ... }               // Polls CPT
+function cs_get_svg_icon($name) { ... }               // Global helpers
 ```
 
 ### 2. Data Storage: Custom Tables + Post Meta
@@ -73,9 +126,43 @@ add_shortcode('voting_mega_menu', 'cs_voting_mega_menu_shortcode');
 
 ### 4. AJAX Pattern
 
-- Handlers in `api/*-ajax.php` or `api/*-endpoints.php`
-- Use `wp_localize_script()` to pass `ajaxurl` and nonces to JS
-- Example: Tournament voting uses `yuv_cast_tournament_vote` action (see `inc/voting/tournament/api/tournament-ajax.php`)
+All AJAX handlers follow WordPress `admin-ajax.php` pattern (NOT REST API):
+
+**Registration** in `api/*-ajax.php`:
+
+```php
+add_action('wp_ajax_my_action', 'cs_handle_my_action');          // Logged-in users
+add_action('wp_ajax_nopriv_my_action', 'cs_handle_my_action');   // Guest users
+```
+
+**JavaScript call** with security:
+
+```javascript
+wp_localize_script('my-script', 'myData', [
+    'ajaxurl' => admin_url('admin-ajax.php'),
+    'nonce' => wp_create_nonce('my_nonce_action')
+]);
+
+// In JS file:
+$.ajax({
+    url: myData.ajaxurl,
+    action: 'my_action',
+    nonce: myData.nonce,
+    data: { ... }
+});
+```
+
+**Handler with nonce verification**:
+
+```php
+function cs_handle_my_action() {
+    check_ajax_referer('my_nonce_action', 'nonce');  // Security check
+    // ... process request
+    wp_send_json_success(['data' => $result]);
+}
+```
+
+Example: Tournament voting in [inc/voting/tournament/api/tournament-ajax.php](../inc/voting/tournament/api/tournament-ajax.php)
 
 ### 5. Tournament System Architecture
 
@@ -102,6 +189,7 @@ Tournament flow:
 | `inc/migrations/run-migrations.php`                          | Creates custom DB tables on activation              |
 | `inc/voting/tournament/classes/class-tournament-manager.php` | Tournament generation logic                         |
 | `inc/quizzes/services/class-ygv-token-service.php`           | Quiz token system (unlocking levels)                |
+| `inc/helpers/icons.php`                                      | SVG icon system via `cs_get_svg_icon()`             |
 | `css/tournament.css`                                         | Tournament arena styles (split-screen duel UI)      |
 | `js/tournament-carousel.js`                                  | Carousel-style match navigation with auto-advance   |
 
@@ -153,10 +241,11 @@ $count = $wpdb->get_var($wpdb->prepare(
 ## ⚠️ Common Pitfalls
 
 1. **Don't** put taxonomies in `taxonomies/` folder - they belong in `cpts/`
-2. **Don't** forget `cs_` prefix on custom functions
+2. **Don't** forget module-specific prefixes (`yuv_`, `ygv_`, `yugo_`, or `cs_`)
 3. **Don't** use localStorage for persistent data (it's not cross-device/browser)
 4. **Don't** create REST API endpoints - this theme uses `admin-ajax.php` pattern
 5. **Don't** modify `inc/admin/admin-init.php` for module-specific admin features - use module's own `admin/` folder
+6. **Don't** skip `check_ajax_referer()` in AJAX handlers - always verify nonces for security
 
 ## 📚 Documentation
 
