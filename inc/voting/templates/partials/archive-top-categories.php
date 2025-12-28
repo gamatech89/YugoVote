@@ -66,21 +66,15 @@ function yuv_get_category_total_votes($term_id) {
 <section class="yuv-top-categories-section">
     <div class="cs-container">
         
-        <!-- Section Header -->
-        <div class="yuv-categories-header">
-            <div class="yuv-header-content">
-                <h2 class="yuv-section-title">Najpopularnije objave po kategorijama</h2>
-                <p class="yuv-section-description">
-                    Glasajte za svoje favorite i otkrijte najtraženije liste u svakoj kategoriji.
-                </p>
-            </div>
-            <a href="/liste-za-glasanje" class="yuv-btn-view-all">
-                pogledaj<br>više
-            </a>
-        </div>
-        
-        <!-- Category Cards Grid -->
-        <div class="yuv-categories-grid">
+        <!-- Category Cards Carousel -->
+        <div class="yuv-categories-carousel">
+            <button class="yuv-carousel-btn yuv-carousel-prev" aria-label="Prethodna">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 18L9 12L15 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            
+            <div class="yuv-carousel-track">
             <?php foreach ($parent_categories as $term): 
                 $term_id = $term->term_id;
                 $term_slug = $term->slug;
@@ -89,13 +83,14 @@ function yuv_get_category_total_votes($term_id) {
                 $term_color = get_term_meta($term_id, 'category_color', true) ?: '#4355A4';
                 $logo_id = get_term_meta($term_id, 'category_logo', true);
                 
-                // Get top 3 voting lists for this category
+                // Get top 3 voting lists for this category (sorted by votes)
                 $top_lists_args = [
                     'post_type'      => 'voting_list',
                     'post_status'    => 'publish',
                     'posts_per_page' => 3,
-                    'orderby'        => 'date',
+                    'orderby'        => 'meta_value_num',
                     'order'          => 'DESC',
+                    'meta_key'       => 'total_score',
                     'meta_query'     => [
                         [
                             'key'     => '_is_tournament_match',
@@ -182,13 +177,20 @@ function yuv_get_category_total_votes($term_id) {
                     <!-- View More Button -->
                     <a href="<?php echo esc_url($term_link); ?>" class="yuv-cat-link">
                         <svg xmlns="http://www.w3.org/2000/svg" width="27" height="20" viewBox="0 0 27 20" fill="none">
-                            <path d="M1.5 9.81774C6.04008 10.4649 16.322 11.371 21.1292 9.81774C27.1381 7.87618 19.1262 6.48935 14.7196 2.8836C10.3131 -0.72216 27.3384 7.7375 25.3354 9.81774C23.3324 11.898 19.1262 16.3358 16.9229 18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M1.5 9.81774C6.04008 10.4649 16.322 11.371 21.1292 9.81774C27.1381 7.87618 19.1262 6.48935 14.7196 2.8836C10.3131 -0.72216 27.3384 7.7375 25.3354 9.81774C23.3324 11.898 19.1262 16.3358 16.9229 18" stroke="white" stroke-width="3" stroke-linecap="round"/>
                         </svg>
                     </a>
                 </div>
             </div>
             
             <?php endforeach; ?>
+            </div>
+            
+            <button class="yuv-carousel-btn yuv-carousel-next" aria-label="Sledeća">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 18L15 12L9 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
         </div>
         
     </div>
