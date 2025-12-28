@@ -18,7 +18,13 @@ $parent_categories = get_terms([
 ]);
 
 if (empty($parent_categories) || is_wp_error($parent_categories)) {
+    echo '<!-- DEBUG: No parent categories found or WP_Error -->';
     return;
+}
+
+echo '<!-- DEBUG: Found ' . count($parent_categories) . ' parent categories -->';
+foreach ($parent_categories as $cat) {
+    echo '<!-- DEBUG Category: ' . $cat->name . ' (ID: ' . $cat->term_id . ') -->';
 }
 
 /**
