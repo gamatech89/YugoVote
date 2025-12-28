@@ -62,7 +62,7 @@
   background: rgba(254, 101, 85, 0.15);
   border: 2px solid rgba(254, 101, 85, 0.3);
   border-radius: 30px;
-  color: #FE6555;
+  color: #fe6555;
   font-size: 14px;
   font-weight: 600;
 }
@@ -73,7 +73,7 @@
 }
 
 .yuv-timer-display .yuv-timer-value {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 16px;
   font-weight: 700;
 }
@@ -127,13 +127,17 @@
 }
 
 .yuv-contender-bg::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.8) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
   z-index: 1;
 }
 
@@ -174,7 +178,7 @@
   align-items: center;
   gap: 8px;
   padding: 16px 48px;
-  background: linear-gradient(135deg, #FE6555 0%, #ff7a6d 100%);
+  background: linear-gradient(135deg, #fe6555 0%, #ff7a6d 100%);
   color: #fff;
   font-size: 16px;
   font-weight: 700;
@@ -193,7 +197,7 @@
 .yuv-vote-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 24px rgba(254, 101, 85, 0.6);
-  background: linear-gradient(135deg, #ff7a6d 0%, #FE6555 100%);
+  background: linear-gradient(135deg, #ff7a6d 0%, #fe6555 100%);
 }
 
 .yuv-vote-btn:active {
@@ -356,7 +360,7 @@
 }
 
 .yuv-nav-item.voted::after {
-  content: '✓';
+  content: "✓";
   position: absolute;
   top: 4px;
   right: 4px;
