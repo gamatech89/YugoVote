@@ -115,14 +115,32 @@ function yuv_get_category_total_votes($term_id) {
                 
                 $top_lists = new WP_Query($top_lists_args);
                 
+                echo '<!-- DEBUG Category: ' . esc_html($term_name) . ' -->';
+                echo '<!-- DEBUG - Term ID: ' . $term_id . ' -->';
+                echo '<!-- DEBUG - Found posts: ' . $top_lists->found_posts . ' -->';
+                echo '<!-- DEBUG - Post count: ' . $top_lists->post_count . ' -->';
+                if ($top_lists->have_posts()) {
+                    while ($top_lists->have_posts()) {
+                        $top_lists->the_post();
+                        $debug_id = get_the_ID();
+                        $debug_score = get_post_meta($debug_id, 'total_score', true);
+                        $debug_title = get_the_title();
+                        echo '<!-- DEBUG - List: ' . esc_html($debug_title) . ' (ID: ' . $debug_id . ', Score: ' . $debug_score . ') -->';
+                    }
+                    wp_reset_postdata();
+                }
+                
                 // Skip categories with no lists
                 if (!$top_lists->have_posts()) {
+                    echo '<!-- DEBUG - SKIPPING category (no posts found) -->';
                     wp_reset_postdata();
                     continue;
                 }
                 
                 // Calculate total votes in category (same method as trending)
                 $total_votes = yuv_get_category_total_votes($term_id);
+                
+                echo '<!-- DEBUG - Total category votes: ' . $total_votes . ' -->';
             ?>
             
             <div class="yuv-cat-card" style="--cat-color: <?php echo esc_attr($term_color); ?>;">
