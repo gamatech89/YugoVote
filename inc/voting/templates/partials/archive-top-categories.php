@@ -66,20 +66,28 @@ echo '<!-- Found ' . count($parent_categories) . ' parent categories -->';
                 $term_color = get_term_meta($term_id, 'category_color', true) ?: '#4355A4';
                 $logo_id = get_term_meta($term_id, 'category_logo', true);
                 
+                // Debug: Check if term has any posts at all
+                $test_query = new WP_Query([
+                    'post_type' => 'voting_list',
+                    'posts_per_page' => 1,
+                    'tax_query' => [
+                        [
+                            'taxonomy' => 'voting_list_category',
+                            'field' => 'term_id',
+                            'terms' => $term_id,
+                        ],
+                    ],
+                ]);
+                echo '<!-- Simple query for category ' . $term->name . ': ' . $test_query->found_posts . ' posts (no meta filters) -->';
+                wp_reset_postdata();
+                
                 // Get top 3 voting lists for this category
                 $top_lists_args = [
                     'post_type'      => 'voting_list',
                     'post_status'    => 'publish',
                     'posts_per_page' => 3,
-                    'orderby'        => 'meta_value_num',
+                    'orderby'        => 'date',
                     'order'          => 'DESC',
-                    'meta_key'       => '_yuv_voting_total_votes',
-                    'meta_query'     => [
-                        [
-                            'key'     => '_is_tournament_match',
-                            'compare' => 'NOT EXISTS',
-                        ],
-                    ],
                     'tax_query'      => [
                         [
                             'taxonomy'         => 'voting_list_category',
@@ -92,7 +100,7 @@ echo '<!-- Found ' . count($parent_categories) . ' parent categories -->';
                 
                 $top_lists = new WP_Query($top_lists_args);
                 
-                echo '<!-- Found ' . $top_lists->found_posts . ' posts for category ' . $term->name . ' -->';
+                echo '<!-- Found ' . $top_lists->found_posts . ' posts for category ' . $term->name . ' with full query -->';
                 
                 // Skip categories with no lists
                 if (!$top_lists->have_posts()) {
